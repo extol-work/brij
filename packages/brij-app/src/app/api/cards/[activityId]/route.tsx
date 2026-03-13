@@ -134,13 +134,16 @@ export async function GET(
   // Satori doesn't reliably support objectPosition or backgroundSize, so we
   // manually scale + offset the <img> to simulate object-fit: cover / center.
   let imgStyle: Record<string, string | number> | null = null;
+  let debugInfo = "no-photo";
   if (isPhotoBg) {
     try {
       const res = await fetch(bgUrl);
       const buf = Buffer.from(await res.arrayBuffer());
+      debugInfo = `fetched:${buf.length}bytes,first4:${buf[0]?.toString(16)}-${buf[1]?.toString(16)}-${buf[2]?.toString(16)}-${buf[3]?.toString(16)}`;
       const dims = parseImageDimensions(buf);
       if (dims) {
         const { width: imgW, height: imgH } = dims;
+        debugInfo += `,dims:${imgW}x${imgH}`;
         const CARD_W = 1080;
         const CARD_H = 1920;
         const scaleX = CARD_W / imgW;
@@ -150,6 +153,7 @@ export async function GET(
         const renderH = Math.round(imgH * scale);
         const offsetX = Math.round((CARD_W - renderW) / 2);
         const offsetY = Math.round((CARD_H - renderH) / 2);
+        debugInfo += `,render:${renderW}x${renderH},offset:${offsetX},${offsetY}`;
         imgStyle = {
           position: "absolute",
           top: `${offsetY}px`,
@@ -157,9 +161,11 @@ export async function GET(
           width: `${renderW}px`,
           height: `${renderH}px`,
         };
+      } else {
+        debugInfo += ",parse-failed";
       }
-    } catch {
-      // Fall back to stretch if we can't determine dimensions
+    } catch (e: unknown) {
+      debugInfo = `error:${e instanceof Error ? e.message : String(e)}`;
     }
   }
 
@@ -467,6 +473,7 @@ export async function GET(
       height: 1920,
       headers: {
         "Cache-Control": "public, max-age=3600, s-maxage=86400",
+        "X-Card-Debug": debugInfo,
       },
     }
   );
