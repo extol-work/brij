@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#FDE8C8"/>
+      <stop offset="35%" stop-color="#F0C27F"/>
+      <stop offset="65%" stop-color="#D4956B"/>
+      <stop offset="100%" stop-color="#A67B5B"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.7" cy="0.2" r="0.5">
+      <stop offset="0%" stop-color="#FFF5E0" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FFF5E0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain2">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="4" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="mono"/>
+      <feBlend in="SourceGraphic" in2="mono" mode="soft-light"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#sky)" filter="url(#grain2)"/>
+  <rect width="1080" height="1920" fill="url(#sun)"/>
+  <!-- Horizon band -->
+  <rect y="850" width="1080" height="200" fill="#E8B87C" opacity="0.2"/>
+  <!-- Warm bokeh circles -->
+  <circle cx="200" cy="400" r="120" fill="#FFE4B5" opacity="0.08"/>
+  <circle cx="750" cy="300" r="80" fill="#FFD699" opacity="0.1"/>
+  <circle cx="500" cy="700" r="150" fill="#F5D5A0" opacity="0.06"/>
+  <circle cx="900" cy="900" r="100" fill="#FFECD2" opacity="0.09"/>
+  <circle cx="150" cy="1100" r="90" fill="#FFD699" opacity="0.07"/>
+</svg>

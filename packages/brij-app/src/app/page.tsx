@@ -117,8 +117,15 @@ function ActivityCard({ a }: { a: Activity }) {
           </span>
         )}
         {a.status === "closed" && a.summary && (
-          <span className="text-sm px-3 py-1 rounded-full bg-green-100 text-green-700">
-            Done
+          <span
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = `/card/${a.id}`;
+            }}
+            className="text-sm px-3 py-1 rounded-full bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors cursor-pointer"
+          >
+            Extol Card
           </span>
         )}
         {a.status === "open" && (

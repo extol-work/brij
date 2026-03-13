@@ -109,6 +109,7 @@ export const activities = pgTable("activities", {
   isRecurring: boolean("is_recurring").default(false).notNull(),
   recurringFrequency: recurringFrequencyEnum("recurring_frequency"),
   seriesId: uuid("series_id"),
+  activityType: text("activity_type"),
   summary: text("summary"),
   sentiment: text("sentiment"),
   closedAt: timestamp("closed_at", { withTimezone: true }),

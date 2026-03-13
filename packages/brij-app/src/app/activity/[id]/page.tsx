@@ -791,6 +791,18 @@ export default function ActivityDetail() {
           </div>
         )}
 
+        {/* Extol Card button — shown for closed activities with attendees */}
+        {activity.status === "closed" && checkedIn.length > 0 && (
+          <div className="mb-6">
+            <button
+              onClick={() => router.push(`/card/${activity.id}`)}
+              className="w-full py-4 bg-violet-600 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors shadow-[0_4px_20px_rgba(124,58,237,0.2)]"
+            >
+              View Extol Card
+            </button>
+          </div>
+        )}
+
         {/* Summary display */}
         {hasSummary && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">

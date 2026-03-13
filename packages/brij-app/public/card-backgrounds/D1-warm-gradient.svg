@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <radialGradient id="glow" cx="0.5" cy="0.35" r="0.7">
+      <stop offset="0%" stop-color="#F9E4B7"/>
+      <stop offset="40%" stop-color="#E8A87C"/>
+      <stop offset="75%" stop-color="#C27D5F"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="mono"/>
+      <feBlend in="SourceGraphic" in2="mono" mode="soft-light"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#glow)" filter="url(#grain)"/>
+  <!-- Soft light shapes for depth -->
+  <ellipse cx="300" cy="600" rx="500" ry="400" fill="#F5D89A" opacity="0.15"/>
+  <ellipse cx="800" cy="1100" rx="450" ry="500" fill="#D4956B" opacity="0.12"/>
+  <ellipse cx="200" cy="1500" rx="600" ry="350" fill="#E8C49A" opacity="0.1"/>
+</svg>

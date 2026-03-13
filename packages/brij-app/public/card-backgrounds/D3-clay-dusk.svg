@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="base" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#D4A574"/>
+      <stop offset="30%" stop-color="#C4916A"/>
+      <stop offset="60%" stop-color="#B07D5E"/>
+      <stop offset="100%" stop-color="#8B6548"/>
+    </linearGradient>
+    <radialGradient id="warmth" cx="0.35" cy="0.45" r="0.6">
+      <stop offset="0%" stop-color="#F0D4A8" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#F0D4A8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="texture">
+      <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="5" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="mono"/>
+      <feBlend in="SourceGraphic" in2="mono" mode="soft-light"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#base)" filter="url(#texture)"/>
+  <rect width="1080" height="1920" fill="url(#warmth)"/>
+  <!-- Layered organic shapes -->
+  <path d="M0,800 Q300,700 540,780 Q780,860 1080,750 L1080,1000 Q800,1050 540,980 Q280,910 0,1000 Z" fill="#C89060" opacity="0.15"/>
+  <path d="M0,1100 Q400,1020 600,1080 Q850,1150 1080,1050 L1080,1250 Q750,1300 540,1230 Q300,1160 0,1280 Z" fill="#A87850" opacity="0.12"/>
+  <ellipse cx="700" cy="500" rx="350" ry="280" fill="#DEBB8E" opacity="0.1"/>
+</svg>

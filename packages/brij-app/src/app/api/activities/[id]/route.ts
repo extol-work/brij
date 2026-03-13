@@ -49,7 +49,7 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { title, description, status, startsAt, endsAt, location, isRecurring, recurringFrequency, summary, sentiment } = body;
+  const { title, description, status, startsAt, endsAt, location, isRecurring, recurringFrequency, summary, sentiment, activityType } = body;
 
   const [updated] = await db
     .update(activities)
@@ -62,6 +62,7 @@ export async function PATCH(
       ...(location !== undefined && { location }),
       ...(isRecurring !== undefined && { isRecurring }),
       ...(recurringFrequency !== undefined && { recurringFrequency: recurringFrequency || null }),
+      ...(activityType !== undefined && { activityType: activityType || null }),
       ...(summary !== undefined && { summary }),
       ...(sentiment !== undefined && { sentiment }),
       ...(status === "closed" && !existing.closedAt && { closedAt: new Date() }),
