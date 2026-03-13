@@ -4,13 +4,64 @@ import { db } from "@/db";
 import { activities, attendances, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
-import { getAuthUser } from "@/lib/auth";
 import QRCode from "qrcode";
+// Parse image dimensions from raw bytes (JPEG + PNG)
+function parseImageDimensions(buf: Buffer): { width: number; height: number } | null {
+  // PNG: bytes 16-23 contain width (4 bytes) and height (4 bytes) in the IHDR chunk
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    const width = buf.readUInt32BE(16);
+    const height = buf.readUInt32BE(20);
+    return { width, height };
+  }
+  // JPEG: scan for SOF0/SOF2 markers (0xFF 0xC0 or 0xFF 0xC2)
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let offset = 2;
+    while (offset < buf.length - 9) {
+      if (buf[offset] !== 0xff) { offset++; continue; }
+      const marker = buf[offset + 1];
+      if (marker === 0xc0 || marker === 0xc2) {
+        const height = buf.readUInt16BE(offset + 5);
+        const width = buf.readUInt16BE(offset + 7);
+        return { width, height };
+      }
+      const len = buf.readUInt16BE(offset + 2);
+      offset += 2 + len;
+    }
+  }
+  return null;
+}
 
 export const runtime = "nodejs";
 
 // Warm cream — legible on both light and dark backgrounds
 const TEXT_COLOR = "#F5E6D0";
+
+// Deterministic avatar colors — diverse warm palette (16 distinct hues)
+const AVATAR_COLORS = [
+  "#D4956B", "#9B7CB8", "#5B8DB8", "#6B8F71",
+  "#D4826B", "#7BAFB8", "#B89BD4", "#C4A84B",
+  "#E07B5F", "#5BA88F", "#8B6BBF", "#BF8A5E",
+  "#6BAACC", "#A3C25C", "#CC7B9B", "#7BC4A8",
+];
+
+// FNV-1a for color selection
+function fnv1a(str: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash;
+}
+
+function getInitial(name: string | null): string {
+  if (!name) return "?";
+  return name.trim().charAt(0).toUpperCase();
+}
+
+function getAvatarColor(name: string | null): string {
+  return AVATAR_COLORS[fnv1a(name ?? "unknown") % AVATAR_COLORS.length];
+}
 
 export async function GET(
   req: NextRequest,
@@ -26,35 +77,91 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  // Get current user for personalization
-  const currentUser = await getAuthUser().catch(() => null);
-  const userId = currentUser?.id ?? null;
-
-  // Count checked-in attendees
+  // Get checked-in attendances with user info
   const allAttendances = await db.query.attendances.findMany({
     where: eq(attendances.activityId, activityId),
   });
-  const checkedInCount = allAttendances.filter((a) => a.status === "checked_in").length;
+  const checkedIn = allAttendances.filter((a) => a.status === "checked_in");
+  const checkedInCount = checkedIn.length;
 
-  // Check if current user is an attendee
-  const isAttendee = userId
-    ? allAttendances.some((a) => a.userId === userId && a.status === "checked_in")
-    : false;
+  // Fetch user names for registered attendees
+  const userIds = checkedIn.map((a) => a.userId).filter(Boolean) as string[];
+  const userMap = new Map<string, string>();
+  if (userIds.length > 0) {
+    const userRows = await Promise.all(
+      userIds.map((uid) =>
+        db.query.users.findFirst({ where: eq(users.id, uid) })
+      )
+    );
+    for (const u of userRows) {
+      if (u) userMap.set(u.id, u.name ?? u.email);
+    }
+  }
 
-  // Select background — userId varies the image per person
+  // Build avatar list: [{name, initial, color}]
+  const avatars = checkedIn.map((a) => {
+    const name = a.userId ? (userMap.get(a.userId) ?? null) : a.guestName;
+    return {
+      name,
+      initial: getInitial(name),
+      color: getAvatarColor(name),
+    };
+  });
+
+  // Select background — uploaded photo takes priority
   const activityType = activity.activityType ?? null;
-  const bg = selectBackground(activityId, activityType, userId);
-  const category = getCategory(activityType);
-  const gradientInfo = CATEGORY_GRADIENTS[category] ?? CATEGORY_GRADIENTS["default"];
-
-  // Build base URL for fetching background images
   const proto = req.headers.get("x-forwarded-proto") ?? "https";
   const host = req.headers.get("host") ?? "brij.extol.work";
   const baseUrl = `${proto}://${host}`;
-  const bgUrl = getBackgroundUrl(bg.file, baseUrl);
 
-  // Photo backgrounds load as images; SVGs use CSS gradient fallback
-  const isPhotoBg = bg.file.endsWith(".jpg") || bg.file.endsWith(".png");
+  let bgUrl: string;
+  let isPhotoBg: boolean;
+  let gradientInfo = CATEGORY_GRADIENTS["default"];
+
+  if (activity.photoUrl) {
+    // Coordinator-uploaded photo — highest priority
+    bgUrl = activity.photoUrl;
+    isPhotoBg = true;
+  } else {
+    const bg = selectBackground(activityId, activityType);
+    const category = getCategory(activityType);
+    gradientInfo = CATEGORY_GRADIENTS[category] ?? CATEGORY_GRADIENTS["default"];
+    bgUrl = getBackgroundUrl(bg.file, baseUrl);
+    isPhotoBg = bg.file.endsWith(".jpg") || bg.file.endsWith(".png");
+  }
+
+  // Compute cover-crop dimensions for photo backgrounds
+  // Satori doesn't reliably support objectPosition or backgroundSize, so we
+  // manually scale + offset the <img> to simulate object-fit: cover / center.
+  let imgStyle: Record<string, string | number> | null = null;
+  if (isPhotoBg) {
+    try {
+      const res = await fetch(bgUrl);
+      const buf = Buffer.from(await res.arrayBuffer());
+      const dims = parseImageDimensions(buf);
+      if (dims) {
+        const { width: imgW, height: imgH } = dims;
+        const CARD_W = 1080;
+        const CARD_H = 1920;
+        const scaleX = CARD_W / imgW;
+        const scaleY = CARD_H / imgH;
+        const scale = Math.max(scaleX, scaleY); // cover
+        const renderW = Math.round(imgW * scale);
+        const renderH = Math.round(imgH * scale);
+        const offsetX = Math.round((CARD_W - renderW) / 2);
+        const offsetY = Math.round((CARD_H - renderH) / 2);
+        imgStyle = {
+          position: "absolute",
+          top: `${offsetY}px`,
+          left: `${offsetX}px`,
+          width: `${renderW}px`,
+          height: `${renderH}px`,
+        };
+      }
+    } catch {
+      // Fall back to stretch if we can't determine dimensions
+    }
+  }
 
   // Format date
   const dateStr = activity.startsAt
@@ -65,24 +172,14 @@ export async function GET(
       })
     : "";
 
-  // Personalized stat line (EXT-46)
+  // Flat stat line — no personalization
   let statLine: string;
   if (checkedInCount === 0) {
     statLine = "No one showed up yet";
-  } else if (isAttendee) {
-    const others = checkedInCount - 1;
-    if (others === 0) {
-      statLine = "You showed up";
-    } else if (others === 1) {
-      statLine = "You + 1 other showed up";
-    } else {
-      statLine = `You + ${Math.min(others, 99)} others showed up`;
-    }
+  } else if (checkedInCount === 1) {
+    statLine = "1 showed up";
   } else {
-    statLine =
-      checkedInCount === 1
-        ? "1 person showed up"
-        : `${checkedInCount} people showed up`;
+    statLine = `${checkedInCount} showed up`;
   }
 
   // Location + date meta
@@ -95,14 +192,28 @@ export async function GET(
       ? activity.title.slice(0, 38) + "…"
       : activity.title;
 
+  // Summary line (from coordinator closure)
+  const summaryText = activity.summary
+    ? activity.summary.length > 80
+      ? activity.summary.slice(0, 78) + "…"
+      : activity.summary
+    : null;
+
   // Generate QR code as data URL
-  const qrUrl = `https://extol.work/a/${activityId}`;
+  const qrUrl = `https://brij.extol.work/activity/${activityId}`;
   const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-    width: 156,
+    width: 300,
     margin: 1,
     color: { dark: TEXT_COLOR, light: "#00000000" },
     errorCorrectionLevel: "M",
   });
+
+  // Avatar row: max 8 visible, overflow as "+N"
+  const MAX_VISIBLE = 8;
+  const overflow = checkedInCount > MAX_VISIBLE ? checkedInCount - 7 : 0;
+  const visibleAvatars = overflow > 0 ? avatars.slice(0, 7) : avatars.slice(0, MAX_VISIBLE);
+  const AVATAR_SIZE = 80;
+  const AVATAR_OVERLAP = 16; // slight overlap — spread out since max 8
 
   return new ImageResponse(
     (
@@ -119,20 +230,25 @@ export async function GET(
           background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image */}
+        {/* Background image — manually positioned to simulate cover + center crop */}
         {isPhotoBg && (
           <img
             src={bgUrl}
-            style={{
+            style={imgStyle ?? {
               position: "absolute",
               top: 0,
               left: 0,
               width: "1080px",
               height: "1920px",
-              objectFit: "cover",
             }}
           />
         )}
+
+        {/* Vignette — four edge gradients for reliable Satori rendering */}
+        <div style={{ position: "absolute", top: 0, left: 0, width: "1080px", height: "400px", background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 100%)" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, width: "1080px", height: "400px", background: "linear-gradient(to top, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 100%)" }} />
+        <div style={{ position: "absolute", top: 0, left: 0, width: "300px", height: "1920px", background: "linear-gradient(to right, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%)" }} />
+        <div style={{ position: "absolute", top: 0, right: 0, width: "300px", height: "1920px", background: "linear-gradient(to left, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%)" }} />
 
         {/* Dark gradient overlay — bottom 60% for text legibility */}
         <div
@@ -194,6 +310,63 @@ export async function GET(
             zIndex: 1,
           }}
         >
+          {/* Avatar row */}
+          {checkedInCount > 0 && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: "24px",
+              }}
+            >
+              {visibleAvatars.map((av, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: `${AVATAR_SIZE}px`,
+                    height: `${AVATAR_SIZE}px`,
+                    borderRadius: "50%",
+                    background: av.color,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "36px",
+                    fontWeight: 700,
+                    color: TEXT_COLOR,
+                    border: "3px solid rgba(0,0,0,0.3)",
+                    marginLeft: i === 0 ? "0" : `-${AVATAR_OVERLAP}px`,
+                    zIndex: MAX_VISIBLE - i,
+                    position: "relative",
+                  }}
+                >
+                  {av.initial}
+                </div>
+              ))}
+              {overflow > 0 && (
+                <div
+                  style={{
+                    width: `${AVATAR_SIZE}px`,
+                    height: `${AVATAR_SIZE}px`,
+                    borderRadius: "50%",
+                    background: "rgba(80,60,50,0.8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "28px",
+                    fontWeight: 700,
+                    color: TEXT_COLOR,
+                    border: "3px solid rgba(0,0,0,0.3)",
+                    marginLeft: `-${AVATAR_OVERLAP}px`,
+                    zIndex: 0,
+                    position: "relative",
+                  }}
+                >
+                  +{overflow}
+                </div>
+              )}
+            </div>
+          )}
+
           <div
             style={{
               fontSize: "84px",
@@ -206,69 +379,84 @@ export async function GET(
           {/* Streak placeholder — ready for EXT-41 */}
         </div>
 
-        {/* Footer zone */}
+        {/* Footer zone — summary wraps alongside QR */}
         <div
           style={{
             padding: "48px 60px 60px",
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
+            gap: "40px",
             position: "relative",
             zIndex: 1,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div
-              style={{
-                fontSize: "42px",
-                fontWeight: 500,
-                opacity: 0.45,
-                letterSpacing: "0.02em",
-              }}
-            >
-              extol.work
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+            {summaryText && (
+              <div
+                style={{
+                  fontSize: "42px",
+                  fontWeight: 400,
+                  opacity: 0.65,
+                  lineHeight: 1.3,
+                  marginBottom: "48px",
+                }}
+              >
+                {summaryText}
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "14px",
-                fontSize: "42px",
+                gap: "16px",
+                fontSize: "52px",
                 fontWeight: 500,
-                opacity: 0.5,
-                marginTop: "16px",
+                opacity: 0.6,
               }}
             >
               <div
                 style={{
-                  width: "28px",
-                  height: "28px",
+                  width: "32px",
+                  height: "32px",
                   borderRadius: "50%",
                   border: `4px solid ${TEXT_COLOR}80`,
                 }}
               />
               Recorded on brij
             </div>
+            <div
+              style={{
+                fontSize: "42px",
+                fontWeight: 500,
+                opacity: 0.45,
+                letterSpacing: "0.02em",
+                marginTop: "4px",
+              }}
+            >
+              extol.work
+            </div>
           </div>
 
-          {/* QR code — 156px (200% area from 110px) */}
+          {/* QR code — 300px for reliable camera scanning */}
           <div
             style={{
-              width: "156px",
-              height: "156px",
+              width: "300px",
+              height: "300px",
+              flexShrink: 0,
               background: "rgba(255,255,255,0.12)",
-              borderRadius: "20px",
+              borderRadius: "28px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "8px",
+              padding: "14px",
             }}
           >
             <img
               src={qrDataUrl}
-              width={140}
-              height={140}
-              style={{ borderRadius: "10px" }}
+              width={272}
+              height={272}
+              style={{ borderRadius: "14px" }}
             />
           </div>
         </div>
