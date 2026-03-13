@@ -139,7 +139,7 @@ export default function Dashboard() {
           </p>
           <button
             onClick={() => signIn()}
-            className="px-8 py-4 text-xl bg-terracotta-500 text-cream rounded-lg font-medium hover:bg-terracotta-600 transition-colors"
+            className="px-6 py-3 text-xl bg-terracotta-500 text-cream rounded-lg font-medium hover:bg-terracotta-600 transition-colors"
           >
             Sign in to get started
           </button>
