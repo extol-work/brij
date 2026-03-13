@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
+import { firstName, initial } from "@/lib/names";
 
 interface Attendee {
   name: string;
@@ -141,7 +142,7 @@ export default function JoinActivity() {
                 <div className="flex flex-wrap justify-center gap-2">
                   {checkedIn.map((a, i) => (
                     <span key={i} className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">
-                      {a.name.charAt(0).toUpperCase()}
+                      {initial(a.name)}
                     </span>
                   ))}
                   <span className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-semibold">
@@ -150,15 +151,27 @@ export default function JoinActivity() {
                 </div>
               </div>
             )}
-            {authenticated && (
+            {authenticated ? (
               <Link
                 href="/"
                 className="inline-block mt-6 px-4 py-2 border border-warm-gray-200 rounded-lg text-bark-900 text-sm font-medium hover:border-terracotta-400 transition-colors"
               >
                 Go to dashboard
               </Link>
+            ) : (
+              <div className="mt-6 space-y-3">
+                <button
+                  onClick={() => signIn(undefined, { callbackUrl: `/join/${code}` })}
+                  className="px-6 py-2 bg-terracotta-500 text-cream rounded-lg text-sm font-medium hover:bg-terracotta-600 transition-colors"
+                >
+                  Sign in to keep a full record
+                </button>
+                <p className="text-xs text-warm-gray-400">
+                  Your attendance will be linked to your account.
+                </p>
+              </div>
             )}
-            <p className="mt-6 text-sm text-warm-gray-400">
+            <p className="mt-4 text-sm text-warm-gray-400">
               {live ? (
                 <>Recorded on Brij.</>
               ) : (
@@ -252,7 +265,7 @@ export default function JoinActivity() {
                 <div className="flex flex-wrap justify-center gap-2">
                   {checkedIn.map((a, i) => (
                     <span key={i} className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">
-                      {a.name.charAt(0).toUpperCase()}
+                      {initial(a.name)}
                     </span>
                   ))}
                 </div>
@@ -280,7 +293,7 @@ export default function JoinActivity() {
                 <div className="flex flex-wrap gap-2">
                   {coming.map((a, i) => (
                     <span key={i} className="text-sm text-bark-900 bg-cream px-2 py-0.5 rounded">
-                      {a.name}
+                      {firstName(a.name)}
                     </span>
                   ))}
                 </div>
@@ -295,7 +308,7 @@ export default function JoinActivity() {
                 <div className="flex flex-wrap gap-2">
                   {checkedIn.map((a, i) => (
                     <span key={i} className="text-sm text-bark-900 bg-cream px-2 py-0.5 rounded">
-                      {a.name}
+                      {firstName(a.name)}
                     </span>
                   ))}
                 </div>

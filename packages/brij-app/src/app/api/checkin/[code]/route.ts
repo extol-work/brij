@@ -71,7 +71,7 @@ export async function POST(
   if (authUser) {
     userId = authUser.id;
 
-    // Check if user already has a record
+    // Check if user already has an authenticated record
     const existing = await db.query.attendances.findFirst({
       where: and(
         eq(attendances.activityId, activity.id),
@@ -89,6 +89,33 @@ export async function POST(
         return NextResponse.json(updated);
       }
       return NextResponse.json(existing);
+    }
+
+    // Claim any prior guest attendance matching this user's name or email
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    if (user) {
+      const guestRecord = await db.query.attendances.findFirst({
+        where: and(
+          eq(attendances.activityId, activity.id),
+          eq(attendances.guestName, user.name ?? user.email)
+        ),
+      });
+      if (guestRecord && !guestRecord.userId) {
+        const [claimed] = await db
+          .update(attendances)
+          .set({
+            userId,
+            guestName: null,
+            ...(checkin && guestRecord.status === "coming"
+              ? { status: "checked_in" as const, checkedInAt: new Date() }
+              : {}),
+          })
+          .where(eq(attendances.id, guestRecord.id))
+          .returning();
+        return NextResponse.json(claimed);
+      }
     }
   }
 
