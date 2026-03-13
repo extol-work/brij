@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import QRCode from "react-qr-code";
+import { firstName, initial } from "@/lib/names";
 
 interface Activity {
   id: string;
@@ -420,7 +421,7 @@ export default function ActivityDetail() {
                   className="flex items-center justify-between py-2 px-3 bg-white border border-warm-gray-200 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-bark-900">{a.name}</span>
+                    <span className="text-sm text-bark-900">{firstName(a.name)}</span>
                     {a.isGuest && (
                       <span className="text-xs text-warm-gray-400">(guest)</span>
                     )}
@@ -452,7 +453,7 @@ export default function ActivityDetail() {
                   className="flex items-center justify-between py-2 px-3 bg-white border border-warm-gray-200 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-bark-900">{a.name}</span>
+                    <span className="text-sm text-bark-900">{firstName(a.name)}</span>
                     {a.isGuest && (
                       <span className="text-xs text-warm-gray-400">(guest)</span>
                     )}
@@ -492,7 +493,7 @@ export default function ActivityDetail() {
                     className="flex items-center justify-between py-2 px-3 bg-white border border-warm-gray-200 rounded-lg"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-bark-900">{a.name}</span>
+                      <span className="text-sm text-bark-900">{firstName(a.name)}</span>
                       {a.isGuest && (
                         <span className="text-xs text-warm-gray-400">(guest)</span>
                       )}

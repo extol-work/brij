@@ -146,10 +146,21 @@ export default function Dashboard() {
     );
   }
 
-  const upcomingCreated = created.filter(isUpcoming);
-  const pastCreated = created.filter((a) => !isUpcoming(a));
-  const upcomingAttended = attended.filter(isUpcoming);
-  const pastAttended = attended.filter((a) => !isUpcoming(a));
+  const sortByStartAsc = (a: Activity, b: Activity) => {
+    const ta = a.startsAt ? new Date(a.startsAt).getTime() : Infinity;
+    const tb = b.startsAt ? new Date(b.startsAt).getTime() : Infinity;
+    return ta - tb;
+  };
+  const sortByStartDesc = (a: Activity, b: Activity) => {
+    const ta = a.startsAt ? new Date(a.startsAt).getTime() : 0;
+    const tb = b.startsAt ? new Date(b.startsAt).getTime() : 0;
+    return tb - ta;
+  };
+
+  const upcomingCreated = created.filter(isUpcoming).sort(sortByStartAsc);
+  const pastCreated = created.filter((a) => !isUpcoming(a)).sort(sortByStartDesc);
+  const upcomingAttended = attended.filter(isUpcoming).sort(sortByStartAsc);
+  const pastAttended = attended.filter((a) => !isUpcoming(a)).sort(sortByStartDesc);
 
   const hasUpcoming = upcomingCreated.length > 0 || upcomingAttended.length > 0;
   const hasPast = pastCreated.length > 0 || pastAttended.length > 0;
