@@ -200,11 +200,11 @@ function JoinActivityInner() {
             )}
             <p className="mt-4 text-sm text-warm-gray-400">
               {live ? (
-                <>Recorded on Brij.</>
+                <>Recorded on brij.</>
               ) : (
                 <>Want to organize your own?{" "}
                   <a href="https://brij.extol.work" className="text-terracotta-500 hover:underline">
-                    Learn about Brij
+                    Learn about brij
                   </a>
                 </>
               )}
