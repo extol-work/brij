@@ -126,7 +126,7 @@ export default function JoinActivity() {
                 <p className="text-sm text-warm-gray-500 mb-4">
                   {activity.title} · {new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                 </p>
-                <div className="mx-auto w-[100px] h-[100px] rounded-full bg-green-600 text-white flex items-center justify-center text-3xl font-bold shadow-[0_4px_20px_rgba(22,163,74,0.3)]">
+                <div className="mx-auto w-[160px] h-[160px] rounded-full bg-green-600 text-white flex items-center justify-center text-5xl font-bold shadow-[0_4px_20px_rgba(22,163,74,0.3)]">
                   ✓
                 </div>
               </>
@@ -143,14 +143,14 @@ export default function JoinActivity() {
             )}
             {live && (
               <div className="mt-6">
-                <p className="text-xs font-medium text-warm-gray-500 uppercase tracking-wide mb-2">Here today:</p>
-                <div className="flex flex-wrap justify-center gap-2">
+                <p className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">Here today:</p>
+                <div className="flex flex-wrap justify-center gap-3">
                   {checkedIn.map((a, i) => (
-                    <span key={i} className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">
+                    <span key={i} className="w-14 h-14 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-lg font-semibold">
                       {initial(a.name)}
                     </span>
                   ))}
-                  <span className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-semibold">
+                  <span className="w-14 h-14 rounded-full bg-green-600 text-white flex items-center justify-center text-lg font-semibold">
                     ✓
                   </span>
                 </div>
@@ -234,7 +234,7 @@ export default function JoinActivity() {
               <button
                 onClick={() => handleAction(false)}
                 disabled={submitting}
-                className="mx-auto w-[160px] h-[160px] rounded-full bg-violet-600 text-white text-2xl font-bold flex items-center justify-center shadow-[0_4px_20px_rgba(124,58,237,0.3)] hover:bg-violet-700 transition-colors disabled:opacity-50"
+                className="mx-auto w-[200px] h-[200px] rounded-full bg-violet-600 text-white text-3xl font-bold flex items-center justify-center shadow-[0_4px_20px_rgba(124,58,237,0.3)] hover:bg-violet-700 transition-colors disabled:opacity-50"
               >
                 {submitting ? "..." : "I'm here"}
               </button>
@@ -260,16 +260,16 @@ export default function JoinActivity() {
               </div>
             )}
 
-            <p className="text-sm text-warm-gray-400 mt-4">
+            <p className="text-lg text-warm-gray-400 mt-4">
               One tap. No account needed.
             </p>
 
             {checkedIn.length > 0 && (
               <div className="mt-6">
-                <p className="text-xs font-medium text-warm-gray-500 uppercase tracking-wide mb-2">Already here:</p>
-                <div className="flex flex-wrap justify-center gap-2">
+                <p className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">Already here:</p>
+                <div className="flex flex-wrap justify-center gap-3">
                   {checkedIn.map((a, i) => (
-                    <span key={i} className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">
+                    <span key={i} className="w-14 h-14 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-lg font-semibold">
                       {initial(a.name)}
                     </span>
                   ))}
