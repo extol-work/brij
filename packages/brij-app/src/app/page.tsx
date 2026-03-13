@@ -192,6 +192,38 @@ export default function Dashboard() {
             <p className="text-2xl text-warm-gray-500 mb-8">
               Build History Together
             </p>
+
+            {/* Three features — left-aligned with boxed icons */}
+            <div className="space-y-4 max-w-xs mx-auto mb-8">
+              <div className="flex gap-3 items-start text-left">
+                <div className="w-9 h-9 rounded-lg bg-cream border border-warm-gray-200 flex items-center justify-center text-bark-900 text-lg shrink-0">+</div>
+                <div>
+                  <p className="text-sm font-semibold text-bark-900">One tap to start</p>
+                  <p className="text-sm text-warm-gray-500">Create an activity, share a link. People show up.</p>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start text-left">
+                <div className="w-9 h-9 rounded-lg bg-cream border border-warm-gray-200 flex items-center justify-center text-bark-900 text-lg shrink-0">&#10003;</div>
+                <div>
+                  <p className="text-sm font-semibold text-bark-900">Everyone gets a card</p>
+                  <p className="text-sm text-warm-gray-500">Shareable proof that you were there, together.</p>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start text-left">
+                <div className="w-9 h-9 rounded-lg bg-cream border border-warm-gray-200 flex items-center justify-center text-bark-900 text-lg shrink-0">&rarr;</div>
+                <div>
+                  <p className="text-sm font-semibold text-bark-900">History builds itself</p>
+                  <p className="text-sm text-warm-gray-500">No spreadsheets, no data entry. Just keep showing up.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Social proof */}
+            <p className="text-sm text-warm-gray-400 mb-6">
+              <span className="font-semibold text-warm-gray-500">847 activities</span> recorded by <span className="font-semibold text-warm-gray-500">142 crews</span> on brij
+            </p>
+
+            {/* CTA */}
             <button
               onClick={() => signIn()}
               className="px-6 py-3 text-xl bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
@@ -202,31 +234,6 @@ export default function Dashboard() {
               Free · Track activities with your crew
             </p>
           </div>
-        </div>
-
-        {/* Three features */}
-        <div className="max-w-lg mx-auto px-6 pb-16">
-          <div className="space-y-8">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-bark-900 mb-1">One tap to start</h3>
-              <p className="text-warm-gray-500">Create an activity, share a link. People show up.</p>
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-bark-900 mb-1">Everyone gets a card</h3>
-              <p className="text-warm-gray-500">Shareable proof that you were there, together.</p>
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-bark-900 mb-1">History builds itself</h3>
-              <p className="text-warm-gray-500">No spreadsheets, no data entry. Just keep showing up.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Social proof */}
-        <div className="text-center pb-8">
-          <p className="text-sm text-warm-gray-400">
-            847 activities recorded by 142 crews on brij
-          </p>
         </div>
 
         {/* Footer */}
