@@ -22,7 +22,7 @@ export async function GET(
   if (activity.status === "open" && activity.endsAt && new Date(activity.endsAt) < new Date()) {
     const [closed] = await db
       .update(activities)
-      .set({ status: "closed", updatedAt: new Date() })
+      .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
       .where(eq(activities.id, id))
       .returning();
     return NextResponse.json(closed);
@@ -49,7 +49,7 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { title, description, status, startsAt, endsAt, location, isRecurring, recurringFrequency } = body;
+  const { title, description, status, startsAt, endsAt, location, isRecurring, recurringFrequency, summary, sentiment } = body;
 
   const [updated] = await db
     .update(activities)
@@ -62,6 +62,9 @@ export async function PATCH(
       ...(location !== undefined && { location }),
       ...(isRecurring !== undefined && { isRecurring }),
       ...(recurringFrequency !== undefined && { recurringFrequency: recurringFrequency || null }),
+      ...(summary !== undefined && { summary }),
+      ...(sentiment !== undefined && { sentiment }),
+      ...(status === "closed" && !existing.closedAt && { closedAt: new Date() }),
       updatedAt: new Date(),
     })
     .where(eq(activities.id, id))

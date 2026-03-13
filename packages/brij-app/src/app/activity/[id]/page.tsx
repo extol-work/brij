@@ -19,6 +19,9 @@ interface Activity {
   isRecurring: boolean;
   recurringFrequency: string | null;
   seriesId: string | null;
+  summary: string | null;
+  sentiment: string | null;
+  closedAt: string | null;
   createdAt: string;
 }
 
@@ -121,6 +124,10 @@ export default function ActivityDetail() {
   const [showOnBehalf, setShowOnBehalf] = useState(false);
   const [walkUpName, setWalkUpName] = useState("");
   const [addingWalkUp, setAddingWalkUp] = useState(false);
+  const [showClosure, setShowClosure] = useState(false);
+  const [closureSentiment, setClosureSentiment] = useState<string | null>(null);
+  const [closureText, setClosureText] = useState("");
+  const [postingSummary, setPostingSummary] = useState(false);
 
   useEffect(() => {
     fetch(`/api/activities/${id}`)
@@ -282,9 +289,53 @@ export default function ActivityDetail() {
     setAddingWalkUp(false);
   }
 
+  const sentimentOptions = [
+    { key: "exhilarating", emoji: "\u26A1", label: "Exhilarating!" },
+    { key: "great_company", emoji: "\uD83E\uDD1D", label: "Great company" },
+    { key: "complete", emoji: "\u2713", label: "Complete" },
+  ];
+
+  function handleSentimentTap(key: string) {
+    if (closureSentiment === key) {
+      setClosureSentiment(null);
+      setClosureText("");
+    } else {
+      setClosureSentiment(key);
+      const opt = sentimentOptions.find((o) => o.key === key);
+      if (opt && !closureText) setClosureText(opt.label);
+    }
+  }
+
+  async function postSummary() {
+    setPostingSummary(true);
+    const summaryText = closureText.trim() || null;
+    const res = await fetch(`/api/activities/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: activity!.status === "open" ? "closed" : undefined,
+        summary: summaryText,
+        sentiment: closureSentiment,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.nextActivity) {
+        setActivity({ ...data, nextActivity: undefined });
+        setNextActivityId(data.nextActivity.id);
+      } else {
+        setActivity(data);
+      }
+      setShowClosure(false);
+    }
+    setPostingSummary(false);
+  }
+
   const formatted = formatDateTime(activity.startsAt);
   const coming = attendees.filter((a) => a.status === "coming");
   const checkedIn = attendees.filter((a) => a.status === "checked_in");
+  const needsClosure = isCoordinator && activity.status === "closed" && !activity.summary;
+  const hasSummary = !!activity.summary;
 
   return (
     <div className="min-h-screen">
@@ -682,6 +733,99 @@ export default function ActivityDetail() {
           </div>
         )}
 
+        {/* Summary display */}
+        {hasSummary && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Summary</p>
+            <p className="text-sm text-bark-900 leading-relaxed">{activity.summary}</p>
+            {isCoordinator && (
+              <button
+                onClick={() => {
+                  setClosureText(activity.summary || "");
+                  setClosureSentiment(activity.sentiment || null);
+                  setShowClosure(true);
+                }}
+                className="text-xs text-warm-gray-400 hover:text-bark-900 mt-2"
+              >
+                Edit summary
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* "How'd it go?" prompt — coordinator, closed, no summary */}
+        {needsClosure && !showClosure && (
+          <div className="mb-6 p-5 bg-violet-50 border-2 border-violet-200 rounded-xl">
+            <h3 className="text-lg font-bold text-bark-900 mb-1">How&apos;d it go?</h3>
+            <p className="text-sm text-warm-gray-500 mb-4">
+              {activity.title} &middot; {checkedIn.length} checked in
+            </p>
+            <button
+              onClick={() => setShowClosure(true)}
+              className="w-full py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors"
+            >
+              Add summary
+            </button>
+            <p className="text-xs text-warm-gray-400 text-center mt-2">
+              You can always add one later
+            </p>
+          </div>
+        )}
+
+        {/* Closure dialog */}
+        {showClosure && (
+          <div className="mb-6 p-5 bg-white border border-warm-gray-200 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-bark-900">How&apos;d it go?</h3>
+              <button
+                onClick={() => setShowClosure(false)}
+                className="text-warm-gray-400 hover:text-bark-900 text-xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <p className="text-sm text-warm-gray-500 mb-4">
+              {activity.title} &middot; {checkedIn.length} checked in
+            </p>
+
+            {/* Quick-tap sentiment buttons */}
+            <div className="flex gap-2 mb-4">
+              {sentimentOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => handleSentimentTap(opt.key)}
+                  className={`flex-1 py-2.5 px-2 rounded-xl border-2 text-center transition-all ${
+                    closureSentiment === opt.key
+                      ? "border-violet-500 bg-violet-50 text-violet-700"
+                      : "border-warm-gray-200 hover:border-violet-300 hover:bg-violet-50"
+                  }`}
+                >
+                  <span className="block text-xl mb-1">{opt.emoji}</span>
+                  <span className="text-xs font-semibold">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Text field */}
+            <textarea
+              value={closureText}
+              onChange={(e) => setClosureText(e.target.value)}
+              placeholder="What happened? (optional)"
+              rows={3}
+              className="w-full px-3 py-3 border border-warm-gray-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 resize-none mb-4"
+            />
+
+            {/* Submit */}
+            <button
+              onClick={postSummary}
+              disabled={postingSummary || (!closureText.trim() && !closureSentiment)}
+              className="w-full py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50"
+            >
+              {postingSummary ? "Posting..." : "Post summary"}
+            </button>
+          </div>
+        )}
+
         {nextActivityId && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800 font-medium">Next occurrence created</p>
@@ -694,18 +838,22 @@ export default function ActivityDetail() {
           </div>
         )}
 
-        {isCoordinator && (
+        {isCoordinator && activity.status === "open" && (
+          <button
+            onClick={() => {
+              setShowClosure(true);
+            }}
+            className="w-full py-3 rounded-lg font-medium transition-colors bg-warm-gray-200 text-bark-900 hover:bg-warm-gray-400"
+          >
+            {activity.isRecurring ? "Close & create next" : "Close activity"}
+          </button>
+        )}
+        {isCoordinator && activity.status === "closed" && (
           <button
             onClick={toggleStatus}
-            className={`w-full py-3 rounded-lg font-medium transition-colors ${
-              activity.status === "open"
-                ? "bg-warm-gray-200 text-bark-900 hover:bg-warm-gray-400"
-                : "bg-terracotta-500 text-cream hover:bg-terracotta-600"
-            }`}
+            className="w-full py-3 rounded-lg font-medium transition-colors bg-terracotta-500 text-cream hover:bg-terracotta-600"
           >
-            {activity.status === "open"
-              ? (activity.isRecurring ? "Close & create next" : "Close activity")
-              : "Reopen activity"}
+            Reopen activity
           </button>
         )}
       </main>

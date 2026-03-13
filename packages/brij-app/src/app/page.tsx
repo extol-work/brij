@@ -13,6 +13,7 @@ interface Activity {
   startsAt: string | null;
   endsAt: string | null;
   location: string | null;
+  summary: string | null;
   createdAt: string;
 }
 
@@ -91,17 +92,26 @@ function ActivityCard({ a }: { a: Activity }) {
             Live
           </span>
         )}
-        <span
-          className={`text-sm px-3 py-1 rounded-full ${
-            a.status === "open"
-              ? "bg-green-100 text-green-700"
-              : a.status === "closed"
-              ? "bg-warm-gray-200 text-warm-gray-500"
-              : "bg-amber-100 text-amber-700"
-          }`}
-        >
-          {a.status === "closed" ? "Done" : a.status}
-        </span>
+        {a.status === "closed" && !a.summary && (
+          <span className="text-sm px-3 py-1 rounded-full bg-violet-100 text-violet-600">
+            How&apos;d it go?
+          </span>
+        )}
+        {a.status === "closed" && a.summary && (
+          <span className="text-sm px-3 py-1 rounded-full bg-green-100 text-green-700">
+            Done
+          </span>
+        )}
+        {a.status === "open" && (
+          <span className="text-sm px-3 py-1 rounded-full bg-green-100 text-green-700">
+            open
+          </span>
+        )}
+        {a.status === "draft" && (
+          <span className="text-sm px-3 py-1 rounded-full bg-amber-100 text-amber-700">
+            draft
+          </span>
+        )}
       </div>
     </Link>
   );
