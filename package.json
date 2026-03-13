@@ -1,0 +1,11 @@
+{
+  "name": "brij",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter brij-app dev",
+    "build": "pnpm --filter brij-app build",
+    "lint": "pnpm --filter brij-app lint",
+    "db:generate": "pnpm --filter brij-app db:generate",
+    "db:migrate": "pnpm --filter brij-app db:migrate"
+  }
+}
