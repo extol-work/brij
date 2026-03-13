@@ -130,11 +130,11 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md px-6">
-          <div className="mb-2">
-            <h1 className="text-5xl font-bold text-bark-900">brij</h1>
-            <p className="text-lg text-warm-gray-400 font-light">by Extol</p>
+          <div className="mb-4">
+            <h1 className="text-7xl font-bold text-bark-900">brij</h1>
+            <p className="text-xl text-warm-gray-400 font-light">by Extol</p>
           </div>
-          <p className="text-warm-gray-500 mb-8">
+          <p className="text-2xl text-warm-gray-500 mb-8">
             Build History Together
           </p>
           <button
