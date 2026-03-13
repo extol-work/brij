@@ -149,6 +149,12 @@ export default function ActivityDetail() {
     }
   }, [authenticated]);
 
+  useEffect(() => {
+    if (showClosure && closureRef.current) {
+      closureRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [showClosure]);
+
   function startEditing() {
     if (!activity) return;
     setEditForm({
@@ -289,12 +295,6 @@ export default function ActivityDetail() {
     }
     setAddingWalkUp(false);
   }
-
-  useEffect(() => {
-    if (showClosure && closureRef.current) {
-      closureRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [showClosure]);
 
   const sentimentOptions = [
     { key: "exhilarating", emoji: "\u26A1", label: "Exhilarating!" },
