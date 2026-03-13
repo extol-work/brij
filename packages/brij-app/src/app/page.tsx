@@ -36,9 +36,9 @@ function isLive(startsAt: string | null): boolean {
 function DateBlock({ startsAt }: { startsAt: string | null }) {
   if (!startsAt) {
     return (
-      <div className="w-11 shrink-0 text-center">
-        <div className="text-[11px] font-semibold uppercase text-warm-gray-400">—</div>
-        <div className="text-xl font-bold text-warm-gray-300 leading-tight">—</div>
+      <div className="w-14 shrink-0 text-center">
+        <div className="text-[15px] font-semibold uppercase text-warm-gray-400">—</div>
+        <div className="text-2xl font-bold text-warm-gray-300 leading-tight">—</div>
       </div>
     );
   }
@@ -46,9 +46,9 @@ function DateBlock({ startsAt }: { startsAt: string | null }) {
   const month = d.toLocaleDateString(undefined, { month: "short" });
   const day = d.getDate();
   return (
-    <div className="w-11 shrink-0 text-center">
-      <div className="text-[11px] font-semibold uppercase text-violet-600 tracking-wide">{month}</div>
-      <div className="text-xl font-bold text-bark-900 leading-tight">{day}</div>
+    <div className="w-14 shrink-0 text-center">
+      <div className="text-[15px] font-semibold uppercase text-violet-600 tracking-wide">{month}</div>
+      <div className="text-2xl font-bold text-bark-900 leading-tight">{day}</div>
     </div>
   );
 }
@@ -73,8 +73,8 @@ function ActivityCard({ a }: { a: Activity }) {
     >
       <DateBlock startsAt={a.startsAt} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-bark-900 truncate">{a.title}</p>
-        {meta && <p className="text-xs text-warm-gray-500 mt-0.5">{meta}</p>}
+        <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
+        {meta && <p className="text-sm text-warm-gray-500 mt-0.5">{meta}</p>}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {live && (
