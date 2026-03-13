@@ -135,8 +135,7 @@ export default function Dashboard() {
             <p className="text-lg text-warm-gray-400 font-light">by Extol</p>
           </div>
           <p className="text-warm-gray-500 mb-8">
-            Track activities, record contributions, and build a history of what
-            your community does together.
+            Build History Together
           </p>
           <button
             onClick={() => signIn()}
