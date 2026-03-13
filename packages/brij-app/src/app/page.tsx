@@ -130,7 +130,10 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md px-6">
-          <h1 className="text-3xl font-bold text-bark-900 mb-2">Brij</h1>
+          <div className="mb-2">
+            <h1 className="text-5xl font-bold text-bark-900">brij</h1>
+            <p className="text-lg text-warm-gray-400 font-light">by Extol</p>
+          </div>
           <p className="text-warm-gray-500 mb-8">
             Track activities, record contributions, and build a history of what
             your community does together.
