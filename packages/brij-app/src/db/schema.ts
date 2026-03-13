@@ -45,6 +45,7 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
+  consentedAt: timestamp("consented_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -110,6 +111,7 @@ export const activities = pgTable("activities", {
   recurringFrequency: recurringFrequencyEnum("recurring_frequency"),
   seriesId: uuid("series_id"),
   activityType: text("activity_type"),
+  photoUrl: text("photo_url"),
   summary: text("summary"),
   sentiment: text("sentiment"),
   closedAt: timestamp("closed_at", { withTimezone: true }),

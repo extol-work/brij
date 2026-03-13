@@ -89,6 +89,17 @@ function JoinActivityInner() {
 
   async function handleAction(asGuest: boolean) {
     setSubmitting(true);
+
+    // Consent gate for authenticated users
+    if (!asGuest && authenticated) {
+      const meRes = await fetch("/api/me");
+      const me = await meRes.json();
+      if (!me.consentedAt) {
+        window.location.href = `/consent?callbackUrl=/join/${code}?claim=1`;
+        return;
+      }
+    }
+
     const live = activity ? isLive(activity.startsAt, activity.endsAt) : false;
     const body = {
       ...(asGuest ? { guestName } : {}),

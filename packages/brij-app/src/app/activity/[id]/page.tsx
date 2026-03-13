@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import QRCode from "react-qr-code";
 import { firstName, initial } from "@/lib/names";
+import { resizeImage } from "@/lib/resize-image";
 
 interface Activity {
   id: string;
@@ -23,6 +24,7 @@ interface Activity {
   sentiment: string | null;
   closedAt: string | null;
   createdAt: string;
+  photoUrl: string | null;
 }
 
 interface Attendee {
@@ -132,6 +134,8 @@ export default function ActivityDetail() {
   const [closureText, setClosureText] = useState("");
   const [postingSummary, setPostingSummary] = useState(false);
   const closureRef = useRef<HTMLDivElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`/api/activities/${id}`)
@@ -328,6 +332,38 @@ export default function ActivityDetail() {
     setAddingWalkUp(false);
   }
 
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const resized = await resizeImage(file);
+      const formData = new FormData();
+      formData.append("photo", resized, "photo.jpg");
+      const res = await fetch(`/api/activities/${id}/photo`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setActivity((prev) => prev ? { ...prev, photoUrl: data.photoUrl } : prev);
+      }
+    } catch {
+      alert("Photo upload failed");
+    }
+    setUploadingPhoto(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
+
+  async function removePhoto() {
+    setUploadingPhoto(true);
+    const res = await fetch(`/api/activities/${id}/photo`, { method: "DELETE" });
+    if (res.ok) {
+      setActivity((prev) => prev ? { ...prev, photoUrl: null } : prev);
+    }
+    setUploadingPhoto(false);
+  }
+
   const sentimentOptions = [
     { key: "exhilarating", emoji: "\u26A1", label: "Exhilarating!" },
     { key: "great_company", emoji: "\uD83E\uDD1D", label: "Great company" },
@@ -337,7 +373,6 @@ export default function ActivityDetail() {
   function handleSentimentTap(key: string) {
     if (closureSentiment === key) {
       setClosureSentiment(null);
-      setClosureText("");
     } else {
       setClosureSentiment(key);
       const opt = sentimentOptions.find((o) => o.key === key);
@@ -545,6 +580,52 @@ export default function ActivityDetail() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Photo upload — coordinator only */}
+        {isCoordinator && (
+          <div className="mb-6">
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+            {activity.photoUrl ? (
+              <div className="relative rounded-xl overflow-hidden">
+                <img
+                  src={activity.photoUrl}
+                  alt="Activity photo"
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute bottom-2 right-2 flex gap-2">
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    className="px-3 py-1.5 bg-black/60 text-white text-xs rounded-lg hover:bg-black/80 transition-colors disabled:opacity-50"
+                  >
+                    {uploadingPhoto ? "..." : "Replace"}
+                  </button>
+                  <button
+                    onClick={removePhoto}
+                    disabled={uploadingPhoto}
+                    className="px-3 py-1.5 bg-black/60 text-white text-xs rounded-lg hover:bg-black/80 transition-colors disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="w-full py-4 border-2 border-dashed border-warm-gray-200 rounded-xl text-warm-gray-400 font-medium flex items-center justify-center gap-2 hover:border-violet-300 hover:text-violet-500 transition-colors disabled:opacity-50"
+              >
+                {uploadingPhoto ? "Uploading..." : "Add photo"}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Auto-close warning banner */}
@@ -791,29 +872,17 @@ export default function ActivityDetail() {
           </div>
         )}
 
-        {/* Extol Card button — shown for closed activities with attendees */}
-        {activity.status === "closed" && checkedIn.length > 0 && (
-          <div className="mb-6">
-            <button
-              onClick={() => router.push(`/card/${activity.id}`)}
-              className="w-full py-4 bg-violet-600 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors shadow-[0_4px_20px_rgba(124,58,237,0.2)]"
-            >
-              View Extol Card
-            </button>
-          </div>
-        )}
-
         {/* Summary display */}
         {hasSummary && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Summary</p>
+            <p className="text-sm font-semibold text-green-600 uppercase tracking-wide mb-2">Summary</p>
             <div className="flex items-start gap-3">
               {activity.sentiment && (
-                <span className="text-2xl shrink-0">
+                <span className="text-3xl shrink-0">
                   {sentimentOptions.find((o) => o.key === activity.sentiment)?.emoji}
                 </span>
               )}
-              <p className="text-sm text-bark-900 leading-relaxed">{activity.summary}</p>
+              <p className="text-base text-bark-900 leading-relaxed">{activity.summary}</p>
             </div>
             {isCoordinator && (
               <button
@@ -903,6 +972,18 @@ export default function ActivityDetail() {
           </div>
         )}
 
+        {/* Extol Card button — shown for closed activities with attendees */}
+        {activity.status === "closed" && checkedIn.length > 0 && (
+          <div className="mb-6">
+            <button
+              onClick={() => router.push(`/card/${activity.id}`)}
+              className="w-full py-4 bg-violet-600 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors shadow-[0_4px_20px_rgba(124,58,237,0.2)]"
+            >
+              View Extol Card
+            </button>
+          </div>
+        )}
+
         {nextActivityId && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800 font-medium">Next occurrence created</p>
@@ -918,6 +999,10 @@ export default function ActivityDetail() {
         {isCoordinator && activity.status === "open" && (
           <button
             onClick={() => {
+              if (activity.summary) {
+                setClosureText(activity.summary);
+                setClosureSentiment(activity.sentiment || null);
+              }
               setShowClosure(true);
             }}
             className="w-full py-3 rounded-lg font-medium transition-colors bg-warm-gray-200 text-bark-900 hover:bg-warm-gray-400"

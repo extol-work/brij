@@ -70,6 +70,14 @@ export async function POST(
   let userId: string | null = null;
 
   if (authUser) {
+    // Consent gate — authenticated users must have consented
+    if (!authUser.consentedAt) {
+      return NextResponse.json(
+        { error: "Consent required", code: "CONSENT_REQUIRED" },
+        { status: 403 }
+      );
+    }
+
     userId = authUser.id;
 
     // Check if user already has an authenticated record

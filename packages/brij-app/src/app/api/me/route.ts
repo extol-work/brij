@@ -11,5 +11,6 @@ export async function GET() {
     id: user.id,
     displayName: user.name,
     email: user.email,
+    consentedAt: user.consentedAt,
   });
 }

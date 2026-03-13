@@ -1,0 +1,1 @@
+ALTER TABLE "activities" ADD COLUMN "photo_url" text;

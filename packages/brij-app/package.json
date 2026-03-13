@@ -15,6 +15,7 @@
     "@auth/drizzle-adapter": "^1.11.1",
     "@brij/core": "workspace:*",
     "@types/qrcode": "^1.5.6",
+    "@vercel/blob": "^2.3.1",
     "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
@@ -23,7 +24,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-qr-code": "^2.0.18",
-    "resend": "^6.9.3"
+    "resend": "^6.9.3",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

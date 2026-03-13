@@ -5,31 +5,7 @@ import { activities, attendances, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
 import QRCode from "qrcode";
-// Parse image dimensions from raw bytes (JPEG + PNG)
-function parseImageDimensions(buf: Buffer): { width: number; height: number } | null {
-  // PNG: bytes 16-23 contain width (4 bytes) and height (4 bytes) in the IHDR chunk
-  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
-    const width = buf.readUInt32BE(16);
-    const height = buf.readUInt32BE(20);
-    return { width, height };
-  }
-  // JPEG: scan for SOF0/SOF2 markers (0xFF 0xC0 or 0xFF 0xC2)
-  if (buf[0] === 0xff && buf[1] === 0xd8) {
-    let offset = 2;
-    while (offset < buf.length - 9) {
-      if (buf[offset] !== 0xff) { offset++; continue; }
-      const marker = buf[offset + 1];
-      if (marker === 0xc0 || marker === 0xc2) {
-        const height = buf.readUInt16BE(offset + 5);
-        const width = buf.readUInt16BE(offset + 7);
-        return { width, height };
-      }
-      const len = buf.readUInt16BE(offset + 2);
-      offset += 2 + len;
-    }
-  }
-  return null;
-}
+import sharp from "sharp";
 
 export const runtime = "nodejs";
 
@@ -133,37 +109,21 @@ export async function GET(
   // Compute cover-crop dimensions for photo backgrounds
   // Satori doesn't reliably support objectPosition or backgroundSize, so we
   // manually scale + offset the <img> to simulate object-fit: cover / center.
-  let imgStyle: Record<string, string | number> | null = null;
+  // Server-side center-crop to exactly 1080x1920 using sharp.
+  // Satori can't do object-fit:cover or center positioning reliably,
+  // so we pre-crop the image and pass it as a data URL.
+  let bgDataUrl: string | null = null;
   let debugInfo = "no-photo";
   if (isPhotoBg) {
     try {
       const res = await fetch(bgUrl);
       const buf = Buffer.from(await res.arrayBuffer());
-      debugInfo = `fetched:${buf.length}bytes,first4:${buf[0]?.toString(16)}-${buf[1]?.toString(16)}-${buf[2]?.toString(16)}-${buf[3]?.toString(16)}`;
-      const dims = parseImageDimensions(buf);
-      if (dims) {
-        const { width: imgW, height: imgH } = dims;
-        debugInfo += `,dims:${imgW}x${imgH}`;
-        const CARD_W = 1080;
-        const CARD_H = 1920;
-        const scaleX = CARD_W / imgW;
-        const scaleY = CARD_H / imgH;
-        const scale = Math.max(scaleX, scaleY); // cover
-        const renderW = Math.round(imgW * scale);
-        const renderH = Math.round(imgH * scale);
-        const offsetX = Math.round((CARD_W - renderW) / 2);
-        const offsetY = Math.round((CARD_H - renderH) / 2);
-        debugInfo += `,render:${renderW}x${renderH},offset:${offsetX},${offsetY}`;
-        imgStyle = {
-          position: "absolute",
-          top: `${offsetY}px`,
-          left: `${offsetX}px`,
-          width: `${renderW}px`,
-          height: `${renderH}px`,
-        };
-      } else {
-        debugInfo += ",parse-failed";
-      }
+      const cropped = await sharp(buf)
+        .resize(1080, 1920, { fit: "cover", position: "center" })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      bgDataUrl = `data:image/jpeg;base64,${cropped.toString("base64")}`;
+      debugInfo = `cropped:${buf.length}->${cropped.length}`;
     } catch (e: unknown) {
       debugInfo = `error:${e instanceof Error ? e.message : String(e)}`;
     }
@@ -236,32 +196,20 @@ export async function GET(
           background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image — wrapper clips overflow, margin-based offset for Satori compat */}
-        {isPhotoBg && (
-          <div
+        {/* Background image — pre-cropped server-side to exact card dimensions */}
+        {bgDataUrl && (
+          <img
+            src={bgDataUrl}
+            width={1080}
+            height={1920}
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               width: "1080px",
               height: "1920px",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
             }}
-          >
-            <img
-              src={bgUrl}
-              width={imgStyle ? Number(String(imgStyle.width).replace("px", "")) : 1080}
-              height={imgStyle ? Number(String(imgStyle.height).replace("px", "")) : 1920}
-              style={{
-                width: imgStyle?.width ?? "1080px",
-                height: imgStyle?.height ?? "1920px",
-                flexShrink: 0,
-              }}
-            />
-          </div>
+          />
         )}
 
         {/* Vignette — four edge gradients for reliable Satori rendering */}

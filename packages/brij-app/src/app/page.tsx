@@ -155,20 +155,30 @@ export default function Dashboard() {
   const [attended, setAttended] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingNow, setStartingNow] = useState(false);
+  const [pastLimit, setPastLimit] = useState(10);
 
   useEffect(() => {
     if (!authenticated) {
       setLoading(false);
       return;
     }
-    fetch("/api/activities")
+    // Check consent before loading activities
+    fetch("/api/me")
       .then((r) => r.json())
-      .then((data) => {
-        if (data.created) setCreated(data.created);
-        if (data.attended) setAttended(data.attended);
+      .then((me) => {
+        if (!me.consentedAt) {
+          router.replace("/consent?callbackUrl=/");
+          return;
+        }
+        return fetch("/api/activities")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.created) setCreated(data.created);
+            if (data.attended) setAttended(data.attended);
+          });
       })
       .finally(() => setLoading(false));
-  }, [authenticated]);
+  }, [authenticated, router]);
 
   if (status === "loading") return null;
 
@@ -210,8 +220,16 @@ export default function Dashboard() {
   const upcomingAttended = attended.filter(isUpcoming).sort(sortByStartAsc);
   const pastAttended = attended.filter((a) => !isUpcoming(a)).sort(sortByStartDesc);
 
+  const allPast = [...pastCreated, ...pastAttended].sort((a, b) => {
+    const ta = a.startsAt ? new Date(a.startsAt).getTime() : 0;
+    const tb = b.startsAt ? new Date(b.startsAt).getTime() : 0;
+    return tb - ta;
+  });
+  const visiblePast = allPast.slice(0, pastLimit);
+  const hasMorePast = allPast.length > pastLimit;
+
   const hasUpcoming = upcomingCreated.length > 0 || upcomingAttended.length > 0;
-  const hasPast = pastCreated.length > 0 || pastAttended.length > 0;
+  const hasPast = allPast.length > 0;
   const hasNothing = !hasUpcoming && !hasPast;
 
   return (
@@ -264,7 +282,7 @@ export default function Dashboard() {
           </h2>
           <Link
             href="/new"
-            className="px-4 py-2 bg-terracotta-500 text-cream rounded-lg text-sm font-medium hover:bg-terracotta-600 transition-colors"
+            className="px-5 py-2.5 bg-terracotta-500 text-cream rounded-lg text-base font-medium hover:bg-terracotta-600 transition-colors"
           >
             Plan activity
           </Link>
@@ -318,10 +336,18 @@ export default function Dashboard() {
                   Past activities
                 </h3>
                 <div>
-                  {[...pastCreated, ...pastAttended].map((a) => (
+                  {visiblePast.map((a) => (
                     <ActivityCard key={a.id} a={a} />
                   ))}
                 </div>
+                {hasMorePast && (
+                  <button
+                    onClick={() => setPastLimit((l) => l + 10)}
+                    className="w-full mt-3 py-2.5 text-sm font-medium text-warm-gray-500 hover:text-bark-900 transition-colors"
+                  >
+                    Show more ({allPast.length - pastLimit} remaining)
+                  </button>
+                )}
               </div>
             )}
           </div>
