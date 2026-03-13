@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { activities, attendances, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, lte, ne, inArray, sql } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
 import QRCode from "qrcode";
 
@@ -83,6 +83,58 @@ export async function GET(
     };
   });
 
+  // --- Streak data ---
+  let weekNumber: number | null = null;
+  let returningCount = 0;
+
+  if (activity.seriesId) {
+    // Series position: count activities in this series up to and including this one
+    const seriesCountResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(activities)
+      .where(
+        and(
+          eq(activities.seriesId, activity.seriesId),
+          activity.startsAt
+            ? lte(activities.startsAt, activity.startsAt)
+            : undefined
+        )
+      );
+    weekNumber = Number(seriesCountResult[0]?.count ?? 0);
+
+    // Returning attendees: checked-in users who also checked into a previous activity in this series
+    if (userIds.length > 0 && activity.startsAt) {
+      // Get all prior activity IDs in this series
+      const priorActivities = await db
+        .select({ id: activities.id })
+        .from(activities)
+        .where(
+          and(
+            eq(activities.seriesId, activity.seriesId),
+            ne(activities.id, activityId),
+            lte(activities.startsAt, activity.startsAt)
+          )
+        );
+      const priorIds = priorActivities.map((a) => a.id);
+
+      if (priorIds.length > 0) {
+        // Find which of current checked-in users also checked into any prior activity
+        const returningUsers = await db
+          .select({ userId: attendances.userId })
+          .from(attendances)
+          .where(
+            and(
+              inArray(attendances.activityId, priorIds),
+              inArray(attendances.userId, userIds),
+              eq(attendances.status, "checked_in")
+            )
+          )
+          .groupBy(attendances.userId);
+        returningCount = returningUsers.length;
+      }
+    }
+  }
+
   // Select background — uploaded photo takes priority
   const activityType = activity.activityType ?? null;
   const proto = req.headers.get("x-forwarded-proto") ?? "https";
@@ -123,6 +175,16 @@ export async function GET(
   } else {
     statLine = `${checkedInCount} showed up`;
   }
+
+  // Streak line: "Week N · M came back"
+  const streakParts: string[] = [];
+  if (weekNumber && weekNumber > 1) {
+    streakParts.push(`Week ${weekNumber}`);
+  }
+  if (returningCount > 0) {
+    streakParts.push(`${returningCount} came back`);
+  }
+  const streakLine = streakParts.length > 0 ? streakParts.join(" · ") : null;
 
   // Location + date meta
   const metaParts = [activity.location, dateStr].filter(Boolean);
@@ -172,8 +234,7 @@ export async function GET(
           background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image — pre-cropped server-side to exact card dimensions */}
-        {/* Background photo — simple img with object-fit cover */}
+        {/* Background photo — object-fit cover */}
         {isPhotoBg && (
           <img
             src={bgUrl}
@@ -322,7 +383,20 @@ export async function GET(
           >
             {statLine}
           </div>
-          {/* Streak placeholder — ready for EXT-41 */}
+          {/* EXT-41: Series streak */}
+          {streakLine && (
+            <div
+              style={{
+                fontSize: "48px",
+                fontWeight: 500,
+                opacity: 0.6,
+                marginTop: "12px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {streakLine}
+            </div>
+          )}
         </div>
 
         {/* Footer zone — summary wraps alongside QR */}
