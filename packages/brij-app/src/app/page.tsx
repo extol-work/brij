@@ -194,23 +194,23 @@ export default function Dashboard() {
             </p>
 
             {/* Three features — left-aligned with boxed icons */}
-            <div className="space-y-4 max-w-xs mx-auto mb-8">
+            <div className="space-y-4 max-w-xs mx-auto mb-12">
               <div className="flex gap-3 items-start text-left">
-                <div className="w-9 h-9 rounded-lg bg-cream border border-warm-gray-200 flex items-center justify-center text-bark-900 text-lg shrink-0">+</div>
+                <div className="w-9 h-9 rounded-lg bg-[#F5E6D0] border border-[#E8D5BC] flex items-center justify-center text-bark-900 text-lg shrink-0">+</div>
                 <div>
                   <p className="text-sm font-semibold text-bark-900">One tap to start</p>
                   <p className="text-sm text-warm-gray-500">Create an activity, share a link. People show up.</p>
                 </div>
               </div>
               <div className="flex gap-3 items-start text-left">
-                <div className="w-9 h-9 rounded-lg bg-cream border border-warm-gray-200 flex items-center justify-center text-bark-900 text-lg shrink-0">&#10003;</div>
+                <div className="w-9 h-9 rounded-lg bg-[#F5E6D0] border border-[#E8D5BC] flex items-center justify-center text-bark-900 text-lg shrink-0">&#10003;</div>
                 <div>
                   <p className="text-sm font-semibold text-bark-900">Everyone gets a card</p>
                   <p className="text-sm text-warm-gray-500">Shareable proof that you were there, together.</p>
                 </div>
               </div>
               <div className="flex gap-3 items-start text-left">
-                <div className="w-9 h-9 rounded-lg bg-cream border border-warm-gray-200 flex items-center justify-center text-bark-900 text-lg shrink-0">&rarr;</div>
+                <div className="w-9 h-9 rounded-lg bg-[#F5E6D0] border border-[#E8D5BC] flex items-center justify-center text-bark-900 text-lg shrink-0">&rarr;</div>
                 <div>
                   <p className="text-sm font-semibold text-bark-900">History builds itself</p>
                   <p className="text-sm text-warm-gray-500">No spreadsheets, no data entry. Just keep showing up.</p>
