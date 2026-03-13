@@ -121,6 +121,9 @@ export default function ActivityDetail() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [nextActivityId, setNextActivityId] = useState<string | null>(null);
+  const [inlineTitle, setInlineTitle] = useState<string | null>(null);
+  const [savingTitle, setSavingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [showOnBehalf, setShowOnBehalf] = useState(false);
   const [walkUpName, setWalkUpName] = useState("");
   const [addingWalkUp, setAddingWalkUp] = useState(false);
@@ -154,6 +157,35 @@ export default function ActivityDetail() {
       closureRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [showClosure]);
+
+  // Auto-show inline title edit for "Untitled activity"
+  useEffect(() => {
+    if (!activity || !currentUserId) return;
+    if (activity.title === "Untitled activity" && currentUserId === activity.coordinatorId) {
+      setInlineTitle(activity.title);
+      setTimeout(() => titleInputRef.current?.focus(), 100);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity?.title, currentUserId]);
+
+  async function saveInlineTitle() {
+    if (!inlineTitle?.trim() || inlineTitle === activity?.title) {
+      setInlineTitle(null);
+      return;
+    }
+    setSavingTitle(true);
+    const res = await fetch(`/api/activities/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: inlineTitle.trim() }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setActivity(updated);
+    }
+    setSavingTitle(false);
+    setInlineTitle(null);
+  }
 
   function startEditing() {
     if (!activity) return;
@@ -431,14 +463,33 @@ export default function ActivityDetail() {
         ) : (
           <>
             <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-bark-900">
-                  {activity.title}
-                </h1>
-                {isCoordinator && (
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {inlineTitle !== null ? (
+                  <input
+                    ref={titleInputRef}
+                    value={inlineTitle}
+                    onChange={(e) => setInlineTitle(e.target.value)}
+                    onBlur={saveInlineTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveInlineTitle();
+                      if (e.key === "Escape") setInlineTitle(null);
+                    }}
+                    placeholder="Name this activity..."
+                    disabled={savingTitle}
+                    className="text-3xl font-bold text-bark-900 bg-transparent border-b-2 border-violet-400 focus:outline-none w-full"
+                  />
+                ) : (
+                  <h1
+                    className={`text-3xl font-bold text-bark-900 ${isCoordinator ? "cursor-pointer hover:text-violet-700 transition-colors" : ""}`}
+                    onClick={isCoordinator ? () => setInlineTitle(activity.title) : undefined}
+                  >
+                    {activity.title}
+                  </h1>
+                )}
+                {isCoordinator && inlineTitle === null && (
                   <button
                     onClick={startEditing}
-                    className="text-xs text-warm-gray-400 hover:text-bark-900"
+                    className="text-xs text-warm-gray-400 hover:text-bark-900 shrink-0"
                   >
                     Edit
                   </button>

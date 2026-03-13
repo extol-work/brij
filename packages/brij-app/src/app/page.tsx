@@ -89,14 +89,14 @@ function ActivityCard({ a }: { a: Activity }) {
   return (
     <Link
       href={`/activity/${a.id}`}
-      className="flex items-center gap-3 py-3 px-1 border-b border-warm-gray-200 last:border-b-0 hover:bg-cream/50 transition-colors"
+      className="flex items-start gap-3 py-3 px-1 border-b border-warm-gray-200 last:border-b-0 hover:bg-cream/50 transition-colors"
     >
       <DateBlock startsAt={a.startsAt} />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pt-0.5">
         <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
         {meta && <p className="text-sm text-warm-gray-500 mt-0.5">{meta}</p>}
       </div>
-      <div className="flex flex-wrap justify-end items-center gap-2">
+      <div className="flex flex-wrap justify-end items-center gap-1.5 max-w-[45%]">
         {(a.status === "open" || live) && (
           <span
             onClick={copyShareLink}

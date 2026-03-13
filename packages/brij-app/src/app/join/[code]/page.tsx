@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { firstName, initial } from "@/lib/names";
@@ -56,8 +56,10 @@ const avatarColors = [
   "bg-rose-500 text-white",
 ];
 
-export default function JoinActivity() {
+function JoinActivityInner() {
   const { code } = useParams<{ code: string }>();
+  const searchParams = useSearchParams();
+  const shouldClaim = searchParams.get("claim") === "1";
   const { status: sessionStatus } = useSession();
   const authenticated = sessionStatus === "authenticated";
   const [activity, setActivity] = useState<ActivityInfo | null>(null);
@@ -76,12 +78,14 @@ export default function JoinActivity() {
       .catch(() => setError("This activity doesn't exist or is no longer open."));
   }, [code]);
 
-  // Auto-claim attendance when returning from sign-in
+  // Auto-claim attendance when returning from sign-in (only with ?claim=1)
   useEffect(() => {
-    if (!authenticated || !activity || submitted || submitting) return;
+    if (!shouldClaim || !authenticated || !activity || submitted || submitting) return;
     handleAction(false);
+    // Clean up the URL
+    window.history.replaceState({}, "", `/join/${code}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated, activity]);
+  }, [shouldClaim, authenticated, activity]);
 
   async function handleAction(asGuest: boolean) {
     setSubmitting(true);
@@ -184,7 +188,7 @@ export default function JoinActivity() {
             ) : (
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={() => signIn(undefined, { callbackUrl: `/join/${code}` })}
+                  onClick={() => signIn(undefined, { callbackUrl: `/join/${code}?claim=1` })}
                   className="px-6 py-2 bg-terracotta-500 text-cream rounded-lg text-sm font-medium hover:bg-terracotta-600 transition-colors"
                 >
                   Sign in to keep a full record
@@ -387,5 +391,13 @@ export default function JoinActivity() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function JoinActivity() {
+  return (
+    <Suspense>
+      <JoinActivityInner />
+    </Suspense>
   );
 }
