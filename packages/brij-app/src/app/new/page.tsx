@@ -84,7 +84,7 @@ export default function NewActivity() {
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-2xl mx-auto px-6 py-4">
-          <span className="text-lg font-bold text-bark-900">Brij</span>
+          <span className="text-lg font-bold text-bark-900">brij</span><span className="text-sm text-warm-gray-400 font-light ml-1.5">by Extol</span>
         </div>
       </header>
 
