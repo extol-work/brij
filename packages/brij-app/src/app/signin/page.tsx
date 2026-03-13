@@ -16,7 +16,10 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-sm px-6">
-        <h1 className="text-2xl font-bold text-bark-900 text-center mb-2">Brij</h1>
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-bark-900">brij</h1>
+          <p className="text-sm text-warm-gray-400 font-light">by Extol</p>
+        </div>
         <p className="text-sm text-warm-gray-500 text-center mb-6">
           Sign in to track activities
         </p>

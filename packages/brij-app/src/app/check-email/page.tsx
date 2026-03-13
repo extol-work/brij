@@ -2,7 +2,10 @@ export default function CheckEmail() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center max-w-sm px-6">
-        <h1 className="text-2xl font-bold text-bark-900 mb-1">Brij</h1>
+        <div className="mb-3">
+          <h1 className="text-3xl font-bold text-bark-900">brij</h1>
+          <p className="text-sm text-warm-gray-400 font-light">by Extol</p>
+        </div>
         <h2 className="text-xl font-semibold text-bark-900 mb-3">
           Check your email
         </h2>
