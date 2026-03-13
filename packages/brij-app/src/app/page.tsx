@@ -184,22 +184,59 @@ export default function Dashboard() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md px-6">
-          <div className="mb-4">
-            <h1 className="text-7xl font-bold text-bark-900">brij</h1>
-            <p className="text-xl text-warm-gray-400 font-light">by Extol</p>
+      <div className="min-h-screen flex flex-col">
+        {/* Hero */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md px-6 py-16">
+            <h1 className="text-7xl font-bold text-bark-900 mb-2">brij</h1>
+            <p className="text-2xl text-warm-gray-500 mb-8">
+              Build History Together
+            </p>
+            <button
+              onClick={() => signIn()}
+              className="px-6 py-3 text-xl bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
+            >
+              Sign in to get started
+            </button>
+            <p className="text-sm text-warm-gray-400 mt-3">
+              Free · Track activities with your crew
+            </p>
           </div>
-          <p className="text-2xl text-warm-gray-500 mb-8">
-            Build History Together
-          </p>
-          <button
-            onClick={() => signIn()}
-            className="px-6 py-3 text-xl bg-terracotta-500 text-cream rounded-lg font-medium hover:bg-terracotta-600 transition-colors"
-          >
-            Sign in to get started
-          </button>
         </div>
+
+        {/* Three features */}
+        <div className="max-w-lg mx-auto px-6 pb-16">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-bark-900 mb-1">One tap to start</h3>
+              <p className="text-warm-gray-500">Create an activity, share a link. People show up.</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-bark-900 mb-1">Everyone gets a card</h3>
+              <p className="text-warm-gray-500">Shareable proof that you were there, together.</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-bark-900 mb-1">History builds itself</h3>
+              <p className="text-warm-gray-500">No spreadsheets, no data entry. Just keep showing up.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Social proof */}
+        <div className="text-center pb-8">
+          <p className="text-sm text-warm-gray-400">
+            847 activities recorded by 142 crews on brij
+          </p>
+        </div>
+
+        {/* Footer */}
+        <footer className="border-t border-warm-gray-200 py-4">
+          <div className="text-center">
+            <p className="text-xl text-warm-gray-400 font-light">
+              brij · <a href="https://extol.work" className="hover:text-bark-900 transition-colors">extol.work</a> · <a href="https://extol.work/privacy" className="hover:text-bark-900 transition-colors">Privacy</a>
+            </p>
+          </div>
+        </footer>
       </div>
     );
   }
