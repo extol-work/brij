@@ -91,11 +91,11 @@ export async function PATCH(
       })
       .returning();
 
-    // Auto-RSVP all checked-in attendees (they can drop out)
-    const checkedIn = await db.query.attendances.findMany({
-      where: and(eq(attendances.activityId, id), eq(attendances.status, "checked_in")),
+    // Auto-RSVP all registered attendees — same crew carries forward, they can drop out
+    const allAttendees = await db.query.attendances.findMany({
+      where: eq(attendances.activityId, id),
     });
-    const rsvpValues = checkedIn
+    const rsvpValues = allAttendees
       .filter((a) => a.userId) // skip anonymous guests
       .map((a) => ({
         activityId: nextActivity.id,
