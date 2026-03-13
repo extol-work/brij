@@ -91,12 +91,28 @@ export async function PATCH(
       })
       .returning();
 
-    // Auto-RSVP coordinator
-    await db.insert(attendances).values({
-      activityId: nextActivity.id,
-      userId: existing.coordinatorId,
-      status: "coming",
+    // Auto-RSVP all checked-in attendees (they can drop out)
+    const checkedIn = await db.query.attendances.findMany({
+      where: and(eq(attendances.activityId, id), eq(attendances.status, "checked_in")),
     });
+    const rsvpValues = checkedIn
+      .filter((a) => a.userId) // skip anonymous guests
+      .map((a) => ({
+        activityId: nextActivity.id,
+        userId: a.userId!,
+        status: "coming" as const,
+      }));
+    // Add coordinator if not already in the list
+    if (!rsvpValues.some((r) => r.userId === existing.coordinatorId)) {
+      rsvpValues.push({
+        activityId: nextActivity.id,
+        userId: existing.coordinatorId,
+        status: "coming",
+      });
+    }
+    if (rsvpValues.length > 0) {
+      await db.insert(attendances).values(rsvpValues);
+    }
 
     return NextResponse.json({ ...updated, nextActivity });
   }
