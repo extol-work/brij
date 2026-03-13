@@ -170,7 +170,7 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-lg font-bold text-bark-900">brij</span><span className="text-sm text-warm-gray-400 font-light ml-1.5">by Extol</span>
+          <div className="flex items-baseline gap-1.5"><span className="text-lg font-bold text-bark-900">brij</span><span className="text-sm text-warm-gray-400 font-light">by Extol</span></div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-warm-gray-500">
               {session?.user?.email || "Signed in"}
