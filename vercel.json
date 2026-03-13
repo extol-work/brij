@@ -1,6 +1,0 @@
-{
-  "buildCommand": "pnpm --filter brij-app build",
-  "installCommand": "pnpm install",
-  "framework": "nextjs",
-  "outputDirectory": "packages/brij-app/.next"
-}
