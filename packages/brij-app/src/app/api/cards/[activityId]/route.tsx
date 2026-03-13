@@ -236,7 +236,7 @@ export async function GET(
           background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image — wrapper clips overflow, inner img is scaled + offset for center crop */}
+        {/* Background image — wrapper clips overflow, margin-based offset for Satori compat */}
         {isPhotoBg && (
           <div
             style={{
@@ -247,6 +247,8 @@ export async function GET(
               height: "1920px",
               overflow: "hidden",
               display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <img
@@ -254,11 +256,9 @@ export async function GET(
               width={imgStyle ? Number(String(imgStyle.width).replace("px", "")) : 1080}
               height={imgStyle ? Number(String(imgStyle.height).replace("px", "")) : 1920}
               style={{
-                position: "absolute",
-                top: imgStyle?.top ?? 0,
-                left: imgStyle?.left ?? 0,
                 width: imgStyle?.width ?? "1080px",
                 height: imgStyle?.height ?? "1920px",
+                flexShrink: 0,
               }}
             />
           </div>
