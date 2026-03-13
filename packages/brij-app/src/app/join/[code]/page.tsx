@@ -76,6 +76,13 @@ export default function JoinActivity() {
       .catch(() => setError("This activity doesn't exist or is no longer open."));
   }, [code]);
 
+  // Auto-claim attendance when returning from sign-in
+  useEffect(() => {
+    if (!authenticated || !activity || submitted || submitting) return;
+    handleAction(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, activity]);
+
   async function handleAction(asGuest: boolean) {
     setSubmitting(true);
     const live = activity ? isLive(activity.startsAt, activity.endsAt) : false;

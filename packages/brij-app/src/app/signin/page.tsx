@@ -2,15 +2,18 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function SignIn() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setSending(true);
-    await signIn("resend", { email, callbackUrl: "/" });
+    await signIn("resend", { email, callbackUrl });
   }
 
   return (
@@ -25,7 +28,7 @@ export default function SignIn() {
         </p>
 
         <button
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={() => signIn("google", { callbackUrl })}
           className="w-full py-3 border border-warm-gray-200 rounded-lg text-bark-900 font-medium hover:border-terracotta-400 transition-colors flex items-center justify-center gap-2 mb-4"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
