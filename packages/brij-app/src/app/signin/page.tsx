@@ -20,8 +20,8 @@ export default function SignIn() {
           <h1 className="text-5xl font-bold text-bark-900">brij</h1>
           <p className="text-lg text-warm-gray-400 font-light">by Extol</p>
         </div>
-        <p className="text-sm text-warm-gray-500 text-center mb-6">
-          Sign in to track activities
+        <p className="text-lg text-warm-gray-500 text-center mb-6">
+          Sign in to join
         </p>
 
         <button

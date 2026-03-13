@@ -146,11 +146,11 @@ export default function JoinActivity() {
                 <p className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">Here today:</p>
                 <div className="flex flex-wrap justify-center gap-3">
                   {checkedIn.map((a, i) => (
-                    <span key={i} className="w-14 h-14 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-lg font-semibold">
+                    <span key={i} className="w-11 h-11 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-lg font-semibold">
                       {initial(a.name)}
                     </span>
                   ))}
-                  <span className="w-14 h-14 rounded-full bg-green-600 text-white flex items-center justify-center text-lg font-semibold">
+                  <span className="w-11 h-11 rounded-full bg-green-600 text-white flex items-center justify-center text-lg font-semibold">
                     ✓
                   </span>
                 </div>
@@ -269,7 +269,7 @@ export default function JoinActivity() {
                 <p className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">Already here:</p>
                 <div className="flex flex-wrap justify-center gap-3">
                   {checkedIn.map((a, i) => (
-                    <span key={i} className="w-14 h-14 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-lg font-semibold">
+                    <span key={i} className="w-11 h-11 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-lg font-semibold">
                       {initial(a.name)}
                     </span>
                   ))}
