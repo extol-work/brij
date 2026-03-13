@@ -40,6 +40,9 @@ export async function GET(
   const baseUrl = `${proto}://${host}`;
   const bgUrl = getBackgroundUrl(bg.file, baseUrl);
 
+  // Try to load background image (works for JPGs, may fail for SVGs with filters)
+  const isPhotoBg = bg.file.endsWith(".jpg") || bg.file.endsWith(".png");
+
   // Format date
   const dateStr = activity.startsAt
     ? new Date(activity.startsAt).toLocaleDateString("en-US", {
@@ -67,9 +70,6 @@ export async function GET(
       ? activity.title.slice(0, 38) + "…"
       : activity.title;
 
-  // Is it an SVG (gradient) background?
-  const isSvgBg = bg.file.endsWith(".svg");
-
   // Generate QR code as data URL
   const qrUrl = `https://extol.work/a/${activityId}`;
   const qrDataUrl = await QRCode.toDataURL(qrUrl, {
@@ -91,11 +91,11 @@ export async function GET(
           fontFamily: "sans-serif",
           color: "#ffffff",
           overflow: "hidden",
-          background: isSvgBg ? gradientInfo.gradient : "#1a1a1a",
+          background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image (photos only) */}
-        {!isSvgBg && (
+        {/* Background image (photos) */}
+        {isPhotoBg && (
           <img
             src={bgUrl}
             style={{
@@ -107,30 +107,6 @@ export async function GET(
               objectFit: "cover",
             }}
           />
-        )}
-
-        {/* Gradient pattern overlay (SVG backgrounds only) — subtle visual interest */}
-        {isSvgBg && (
-          <div
-            style={{
-              position: "absolute",
-              top: "500px",
-              left: 0,
-              right: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: "300px",
-                height: "300px",
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.04)",
-              }}
-            />
-          </div>
         )}
 
         {/* Dark gradient overlay — bottom 60% for text legibility */}
@@ -203,10 +179,6 @@ export async function GET(
             {statLine}
           </div>
           {/* Streak placeholder — ready for EXT-41 */}
-          {/* <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "16px", fontSize: "32px", fontWeight: 600, opacity: 0.8 }}>
-            <div style={{ width: "16px", height: "16px", borderRadius: "50%", background: "#a78bfa" }} />
-            Week N in a row
-          </div> */}
         </div>
 
         {/* Footer zone */}

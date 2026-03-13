@@ -42,16 +42,17 @@ const CATEGORY_MAP: Record<string, string> = {
   dinner: "social",
 };
 
-// Gradient fallback per category (used when rendering the card with Satori)
+// Gradient fallback per category — warm tones matching D1/D2/D3 SVG backgrounds
+// These render via CSS when the background is an SVG (Satori can't render SVG filters)
 export const CATEGORY_GRADIENTS: Record<string, { gradient: string; emoji: string }> = {
-  outdoors: { gradient: "linear-gradient(145deg, #059669, #065f46, #1a1a2e)", emoji: "🌿" },
-  music: { gradient: "linear-gradient(145deg, #7c3aed, #4c1d95, #1e1b4b)", emoji: "🎵" },
-  sports: { gradient: "linear-gradient(145deg, #2563eb, #1e40af, #1e1b4b)", emoji: "⚽" },
-  community: { gradient: "linear-gradient(145deg, #d97706, #92400e, #1a1a2e)", emoji: "🤝" },
-  education: { gradient: "linear-gradient(145deg, #0891b2, #155e75, #1a1a2e)", emoji: "📚" },
-  faith: { gradient: "linear-gradient(145deg, #7c3aed, #581c87, #1a1a2e)", emoji: "🕊️" },
-  social: { gradient: "linear-gradient(145deg, #e11d48, #9f1239, #1a1a2e)", emoji: "🎉" },
-  default: { gradient: "linear-gradient(145deg, #374151, #1f2937, #0f0f0f)", emoji: "✦" },
+  outdoors: { gradient: "linear-gradient(145deg, #6B8F71, #3D6B4E, #2A3D2E)", emoji: "🌿" },
+  music: { gradient: "linear-gradient(145deg, #9B7CB8, #6B4D8A, #3D2D52)", emoji: "🎵" },
+  sports: { gradient: "linear-gradient(145deg, #5B8DB8, #3D6B8A, #2A3D52)", emoji: "⚽" },
+  community: { gradient: "linear-gradient(145deg, #D4956B, #B87A52, #8B5E3C)", emoji: "🤝" },
+  education: { gradient: "linear-gradient(145deg, #7BAFB8, #4D8A8F, #2D5B5E)", emoji: "📚" },
+  faith: { gradient: "linear-gradient(145deg, #B89BD4, #8A6BB0, #5C3D7A)", emoji: "🕊️" },
+  social: { gradient: "linear-gradient(145deg, #D4826B, #B85E52, #8B3C3C)", emoji: "🎉" },
+  default: { gradient: "linear-gradient(145deg, #F9E4B7, #D4956B, #8B5E3C)", emoji: "✦" },
 };
 
 // FNV-1a hash — deterministic selection, same input always picks same image
