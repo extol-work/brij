@@ -9,8 +9,10 @@ const backgrounds: Record<string, string[]> = {
   education: ["E1-study.jpg", "E2-study.jpg", "E3-whiteboard.jpg"],
   faith: ["F1-windows.jpg", "F2-candles.jpg", "F3-path.jpg"],
   social: ["G1-patio-stringlights.jpg"],
-  default: ["D1-warm-gradient.svg", "D2-amber-wash.svg", "D3-clay-dusk.svg"],
 };
+
+// All photo backgrounds merged — used when activityType is null
+const allPhotos: string[] = Object.values(backgrounds).flat();
 
 const CATEGORY_MAP: Record<string, string> = {
   hiking: "outdoors",
@@ -42,17 +44,16 @@ const CATEGORY_MAP: Record<string, string> = {
   dinner: "social",
 };
 
-// Gradient fallback per category — warm tones matching D1/D2/D3 SVG backgrounds
-// These render via CSS when the background is an SVG (Satori can't render SVG filters)
-export const CATEGORY_GRADIENTS: Record<string, { gradient: string; emoji: string }> = {
-  outdoors: { gradient: "linear-gradient(145deg, #6B8F71, #3D6B4E, #2A3D2E)", emoji: "🌿" },
-  music: { gradient: "linear-gradient(145deg, #9B7CB8, #6B4D8A, #3D2D52)", emoji: "🎵" },
-  sports: { gradient: "linear-gradient(145deg, #5B8DB8, #3D6B8A, #2A3D52)", emoji: "⚽" },
-  community: { gradient: "linear-gradient(145deg, #D4956B, #B87A52, #8B5E3C)", emoji: "🤝" },
-  education: { gradient: "linear-gradient(145deg, #7BAFB8, #4D8A8F, #2D5B5E)", emoji: "📚" },
-  faith: { gradient: "linear-gradient(145deg, #B89BD4, #8A6BB0, #5C3D7A)", emoji: "🕊️" },
-  social: { gradient: "linear-gradient(145deg, #D4826B, #B85E52, #8B3C3C)", emoji: "🎉" },
-  default: { gradient: "linear-gradient(145deg, #F9E4B7, #D4956B, #8B5E3C)", emoji: "✦" },
+// Gradient fallback per category — warm tones, only used when image loading fails
+export const CATEGORY_GRADIENTS: Record<string, { gradient: string }> = {
+  outdoors: { gradient: "linear-gradient(145deg, #6B8F71, #3D6B4E, #2A3D2E)" },
+  music: { gradient: "linear-gradient(145deg, #9B7CB8, #6B4D8A, #3D2D52)" },
+  sports: { gradient: "linear-gradient(145deg, #5B8DB8, #3D6B8A, #2A3D52)" },
+  community: { gradient: "linear-gradient(145deg, #D4956B, #B87A52, #8B5E3C)" },
+  education: { gradient: "linear-gradient(145deg, #7BAFB8, #4D8A8F, #2D5B5E)" },
+  faith: { gradient: "linear-gradient(145deg, #B89BD4, #8A6BB0, #5C3D7A)" },
+  social: { gradient: "linear-gradient(145deg, #D4826B, #B85E52, #8B3C3C)" },
+  default: { gradient: "linear-gradient(145deg, #F9E4B7, #D4956B, #8B5E3C)" },
 };
 
 // FNV-1a hash — deterministic selection, same input always picks same image
@@ -70,13 +71,21 @@ export function getCategory(activityType: string | null): string {
   return CATEGORY_MAP[activityType.toLowerCase()] ?? "default";
 }
 
-export function selectBackground(activityId: string, activityType: string | null): {
-  file: string;
-  category: string;
-} {
+// Select background image. When activityType is null, rotates through ALL photos.
+// userId makes each person's card look different for the same activity.
+export function selectBackground(
+  activityId: string,
+  activityType: string | null,
+  userId?: string | null
+): { file: string; category: string } {
   const category = getCategory(activityType);
-  const pool = backgrounds[category] ?? backgrounds["default"];
-  const hash = fnv1a(activityId);
+
+  // When no activityType, pull from all photos across all categories
+  const pool = category === "default" ? allPhotos : (backgrounds[category] ?? allPhotos);
+
+  // Hash includes userId when available (per-user card personalization)
+  const seed = userId ? `${activityId}:${userId}` : activityId;
+  const hash = fnv1a(seed);
   const index = hash % pool.length;
   return { file: pool[index], category };
 }

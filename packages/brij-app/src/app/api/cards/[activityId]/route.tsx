@@ -1,12 +1,16 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { activities, attendances } from "@/db/schema";
+import { activities, attendances, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
+import { getAuthUser } from "@/lib/auth";
 import QRCode from "qrcode";
 
 export const runtime = "nodejs";
+
+// Warm cream — legible on both light and dark backgrounds
+const TEXT_COLOR = "#F5E6D0";
 
 export async function GET(
   req: NextRequest,
@@ -22,15 +26,24 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
+  // Get current user for personalization
+  const currentUser = await getAuthUser().catch(() => null);
+  const userId = currentUser?.id ?? null;
+
   // Count checked-in attendees
   const allAttendances = await db.query.attendances.findMany({
     where: eq(attendances.activityId, activityId),
   });
   const checkedInCount = allAttendances.filter((a) => a.status === "checked_in").length;
 
-  // Select background
+  // Check if current user is an attendee
+  const isAttendee = userId
+    ? allAttendances.some((a) => a.userId === userId && a.status === "checked_in")
+    : false;
+
+  // Select background — userId varies the image per person
   const activityType = activity.activityType ?? null;
-  const bg = selectBackground(activityId, activityType);
+  const bg = selectBackground(activityId, activityType, userId);
   const category = getCategory(activityType);
   const gradientInfo = CATEGORY_GRADIENTS[category] ?? CATEGORY_GRADIENTS["default"];
 
@@ -40,7 +53,7 @@ export async function GET(
   const baseUrl = `${proto}://${host}`;
   const bgUrl = getBackgroundUrl(bg.file, baseUrl);
 
-  // Try to load background image (works for JPGs, may fail for SVGs with filters)
+  // Photo backgrounds load as images; SVGs use CSS gradient fallback
   const isPhotoBg = bg.file.endsWith(".jpg") || bg.file.endsWith(".png");
 
   // Format date
@@ -52,13 +65,25 @@ export async function GET(
       })
     : "";
 
-  // Stat line
-  const statLine =
-    checkedInCount === 0
-      ? "No one showed up yet"
-      : checkedInCount === 1
+  // Personalized stat line (EXT-46)
+  let statLine: string;
+  if (checkedInCount === 0) {
+    statLine = "No one showed up yet";
+  } else if (isAttendee) {
+    const others = checkedInCount - 1;
+    if (others === 0) {
+      statLine = "You showed up";
+    } else if (others === 1) {
+      statLine = "You + 1 other showed up";
+    } else {
+      statLine = `You + ${Math.min(others, 99)} others showed up`;
+    }
+  } else {
+    statLine =
+      checkedInCount === 1
         ? "1 person showed up"
         : `${checkedInCount} people showed up`;
+  }
 
   // Location + date meta
   const metaParts = [activity.location, dateStr].filter(Boolean);
@@ -73,9 +98,9 @@ export async function GET(
   // Generate QR code as data URL
   const qrUrl = `https://extol.work/a/${activityId}`;
   const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-    width: 110,
+    width: 156,
     margin: 1,
-    color: { dark: "#ffffff", light: "#00000000" },
+    color: { dark: TEXT_COLOR, light: "#00000000" },
     errorCorrectionLevel: "M",
   });
 
@@ -89,12 +114,12 @@ export async function GET(
           flexDirection: "column",
           position: "relative",
           fontFamily: "sans-serif",
-          color: "#ffffff",
+          color: TEXT_COLOR,
           overflow: "hidden",
           background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image (photos) */}
+        {/* Background image */}
         {isPhotoBg && (
           <img
             src={bgUrl}
@@ -134,9 +159,9 @@ export async function GET(
         >
           <div
             style={{
-              fontSize: "72px",
+              fontSize: "108px",
               fontWeight: 700,
-              lineHeight: 1.15,
+              lineHeight: 1.1,
               letterSpacing: "-0.02em",
             }}
           >
@@ -145,10 +170,10 @@ export async function GET(
           {metaLine && (
             <div
               style={{
-                fontSize: "28px",
+                fontSize: "42px",
                 fontWeight: 400,
                 opacity: 0.7,
-                marginTop: "12px",
+                marginTop: "16px",
               }}
             >
               {metaLine}
@@ -171,7 +196,7 @@ export async function GET(
         >
           <div
             style={{
-              fontSize: "56px",
+              fontSize: "84px",
               fontWeight: 700,
               letterSpacing: "-0.02em",
             }}
@@ -195,7 +220,7 @@ export async function GET(
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div
               style={{
-                fontSize: "28px",
+                fontSize: "42px",
                 fontWeight: 500,
                 opacity: 0.45,
                 letterSpacing: "0.02em",
@@ -207,43 +232,43 @@ export async function GET(
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                fontSize: "28px",
+                gap: "14px",
+                fontSize: "42px",
                 fontWeight: 500,
                 opacity: 0.5,
-                marginTop: "12px",
+                marginTop: "16px",
               }}
             >
               <div
                 style={{
-                  width: "20px",
-                  height: "20px",
+                  width: "28px",
+                  height: "28px",
                   borderRadius: "50%",
-                  border: "3px solid rgba(255,255,255,0.5)",
+                  border: `4px solid ${TEXT_COLOR}80`,
                 }}
               />
               Recorded on brij
             </div>
           </div>
 
-          {/* QR code */}
+          {/* QR code — 156px (200% area from 110px) */}
           <div
             style={{
-              width: "110px",
-              height: "110px",
-              background: "rgba(255,255,255,0.15)",
-              borderRadius: "16px",
+              width: "156px",
+              height: "156px",
+              background: "rgba(255,255,255,0.12)",
+              borderRadius: "20px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "6px",
+              padding: "8px",
             }}
           >
             <img
               src={qrDataUrl}
-              width={98}
-              height={98}
-              style={{ borderRadius: "8px" }}
+              width={140}
+              height={140}
+              style={{ borderRadius: "10px" }}
             />
           </div>
         </div>
