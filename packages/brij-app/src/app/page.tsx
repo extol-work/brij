@@ -75,6 +75,17 @@ function ActivityCard({ a }: { a: Activity }) {
   const live = isLive(a);
   const time = formatTime(a.startsAt);
   const meta = [time, a.location].filter(Boolean).join(" · ");
+  const [copied, setCopied] = useState(false);
+
+  function copyShareLink(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/join/${a.shareCode}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <Link
       href={`/activity/${a.id}`}
@@ -86,6 +97,14 @@ function ActivityCard({ a }: { a: Activity }) {
         {meta && <p className="text-sm text-warm-gray-500 mt-0.5">{meta}</p>}
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {(a.status === "open" || live) && (
+          <span
+            onClick={copyShareLink}
+            className="text-xs px-2 py-1 rounded-full border border-warm-gray-200 text-warm-gray-500 hover:border-terracotta-400 hover:text-terracotta-500 transition-colors cursor-pointer"
+          >
+            {copied ? "Copied!" : "Share"}
+          </span>
+        )}
         {live && (
           <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full uppercase tracking-wide">
             <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse" />

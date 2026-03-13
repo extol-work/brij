@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import QRCode from "react-qr-code";
@@ -128,6 +128,7 @@ export default function ActivityDetail() {
   const [closureSentiment, setClosureSentiment] = useState<string | null>(null);
   const [closureText, setClosureText] = useState("");
   const [postingSummary, setPostingSummary] = useState(false);
+  const closureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/activities/${id}`)
@@ -288,6 +289,12 @@ export default function ActivityDetail() {
     }
     setAddingWalkUp(false);
   }
+
+  useEffect(() => {
+    if (showClosure && closureRef.current) {
+      closureRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [showClosure]);
 
   const sentimentOptions = [
     { key: "exhilarating", emoji: "\u26A1", label: "Exhilarating!" },
@@ -737,7 +744,14 @@ export default function ActivityDetail() {
         {hasSummary && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
             <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Summary</p>
-            <p className="text-sm text-bark-900 leading-relaxed">{activity.summary}</p>
+            <div className="flex items-start gap-3">
+              {activity.sentiment && (
+                <span className="text-2xl shrink-0">
+                  {sentimentOptions.find((o) => o.key === activity.sentiment)?.emoji}
+                </span>
+              )}
+              <p className="text-sm text-bark-900 leading-relaxed">{activity.summary}</p>
+            </div>
             {isCoordinator && (
               <button
                 onClick={() => {
@@ -774,7 +788,7 @@ export default function ActivityDetail() {
 
         {/* Closure dialog */}
         {showClosure && (
-          <div className="mb-6 p-5 bg-white border border-warm-gray-200 rounded-xl shadow-sm">
+          <div ref={closureRef} className="mb-6 p-5 bg-white border border-warm-gray-200 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-bold text-bark-900">How&apos;d it go?</h3>
               <button
@@ -794,14 +808,14 @@ export default function ActivityDetail() {
                 <button
                   key={opt.key}
                   onClick={() => handleSentimentTap(opt.key)}
-                  className={`flex-1 py-2.5 px-2 rounded-xl border-2 text-center transition-all ${
+                  className={`flex-1 py-3 px-2 rounded-xl border-2 text-center transition-all ${
                     closureSentiment === opt.key
                       ? "border-violet-500 bg-violet-50 text-violet-700"
                       : "border-warm-gray-200 hover:border-violet-300 hover:bg-violet-50"
                   }`}
                 >
-                  <span className="block text-xl mb-1">{opt.emoji}</span>
-                  <span className="text-xs font-semibold">{opt.label}</span>
+                  <span className="block text-2xl mb-1">{opt.emoji}</span>
+                  <span className="text-sm font-semibold">{opt.label}</span>
                 </button>
               ))}
             </div>
