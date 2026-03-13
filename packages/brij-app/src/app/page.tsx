@@ -187,14 +187,14 @@ export default function Dashboard() {
       <div className="min-h-screen flex flex-col">
         {/* Hero */}
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md px-6 py-16">
+          <div className="text-center max-w-[500px] mx-auto px-6 py-8 md:py-16">
             <h1 className="text-7xl font-bold text-bark-900 mb-2">brij</h1>
             <p className="text-2xl text-warm-gray-500 mb-8">
               Build History Together
             </p>
 
             {/* Three features — left-aligned with boxed icons */}
-            <div className="space-y-4 max-w-xs mx-auto mb-12">
+            <div className="space-y-4 md:space-y-6 max-w-xs mx-auto mb-12 md:mb-16">
               <div className="flex gap-3 items-start text-left">
                 <div className="w-9 h-9 rounded-lg bg-[#F5E6D0] border border-[#E8D5BC] flex items-center justify-center text-bark-900 text-lg shrink-0">+</div>
                 <div>
@@ -219,7 +219,7 @@ export default function Dashboard() {
             </div>
 
             {/* Social proof */}
-            <p className="text-sm text-warm-gray-400 mb-6">
+            <p className="text-sm text-warm-gray-400 mb-6 md:mb-8">
               <span className="font-semibold text-warm-gray-500">847 activities</span> recorded by <span className="font-semibold text-warm-gray-500">142 crews</span> on brij
             </p>
 
