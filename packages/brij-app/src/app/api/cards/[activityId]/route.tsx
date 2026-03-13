@@ -236,18 +236,32 @@ export async function GET(
           background: isPhotoBg ? "#1a1a1a" : gradientInfo.gradient,
         }}
       >
-        {/* Background image — manually positioned to simulate cover + center crop */}
+        {/* Background image — wrapper clips overflow, inner img is scaled + offset for center crop */}
         {isPhotoBg && (
-          <img
-            src={bgUrl}
-            style={imgStyle ?? {
+          <div
+            style={{
               position: "absolute",
               top: 0,
               left: 0,
               width: "1080px",
               height: "1920px",
+              overflow: "hidden",
+              display: "flex",
             }}
-          />
+          >
+            <img
+              src={bgUrl}
+              width={imgStyle ? Number(String(imgStyle.width).replace("px", "")) : 1080}
+              height={imgStyle ? Number(String(imgStyle.height).replace("px", "")) : 1920}
+              style={{
+                position: "absolute",
+                top: imgStyle?.top ?? 0,
+                left: imgStyle?.left ?? 0,
+                width: imgStyle?.width ?? "1080px",
+                height: imgStyle?.height ?? "1920px",
+              }}
+            />
+          </div>
         )}
 
         {/* Vignette — four edge gradients for reliable Satori rendering */}
