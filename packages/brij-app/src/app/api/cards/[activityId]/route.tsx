@@ -5,7 +5,6 @@ import { activities, attendances, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
 import QRCode from "qrcode";
-import sharp from "sharp";
 
 export const runtime = "nodejs";
 
@@ -106,29 +105,6 @@ export async function GET(
     isPhotoBg = bg.file.endsWith(".jpg") || bg.file.endsWith(".png");
   }
 
-  // Compute cover-crop dimensions for photo backgrounds
-  // Satori doesn't reliably support objectPosition or backgroundSize, so we
-  // manually scale + offset the <img> to simulate object-fit: cover / center.
-  // Server-side center-crop to exactly 1080x1920 using sharp.
-  // Satori can't do object-fit:cover or center positioning reliably,
-  // so we pre-crop the image and pass it as a data URL.
-  let bgDataUrl: string | null = null;
-  let debugInfo = "no-photo";
-  if (isPhotoBg) {
-    try {
-      const res = await fetch(bgUrl);
-      const buf = Buffer.from(await res.arrayBuffer());
-      const cropped = await sharp(buf)
-        .resize(1080, 1920, { fit: "cover", position: "center" })
-        .jpeg({ quality: 80 })
-        .toBuffer();
-      bgDataUrl = `data:image/jpeg;base64,${cropped.toString("base64")}`;
-      debugInfo = `cropped:${buf.length}->${cropped.length}`;
-    } catch (e: unknown) {
-      debugInfo = `error:${e instanceof Error ? e.message : String(e)}`;
-    }
-  }
-
   // Format date
   const dateStr = activity.startsAt
     ? new Date(activity.startsAt).toLocaleDateString("en-US", {
@@ -197,9 +173,10 @@ export async function GET(
         }}
       >
         {/* Background image — pre-cropped server-side to exact card dimensions */}
-        {bgDataUrl && (
+        {/* Background photo — simple img with object-fit cover */}
+        {isPhotoBg && (
           <img
-            src={bgDataUrl}
+            src={bgUrl}
             width={1080}
             height={1920}
             style={{
@@ -208,6 +185,7 @@ export async function GET(
               left: 0,
               width: "1080px",
               height: "1920px",
+              objectFit: "cover",
             }}
           />
         )}
@@ -435,7 +413,6 @@ export async function GET(
       height: 1920,
       headers: {
         "Cache-Control": "public, max-age=3600, s-maxage=86400",
-        "X-Card-Debug": debugInfo,
       },
     }
   );

@@ -24,8 +24,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-qr-code": "^2.0.18",
-    "resend": "^6.9.3",
-    "sharp": "^0.34.5"
+    "resend": "^6.9.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
