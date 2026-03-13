@@ -1,4 +1,4 @@
-# Brij
+# brij
 
 Free, open-source activity tracker for communities. Track activities, record attendance, log contributions, and build a visible history of what your community does together.
 
