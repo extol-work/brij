@@ -43,6 +43,7 @@ export async function GET(
     description: activity.description,
     location: activity.location,
     startsAt: activity.startsAt,
+    endsAt: activity.endsAt,
     attendees,
   });
 }

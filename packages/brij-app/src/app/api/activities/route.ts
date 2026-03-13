@@ -48,7 +48,35 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { title, description, startsAt, endsAt, location, isRecurring, recurringFrequency } = body;
+  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency } = body;
+
+  // "Now" mode: instant live activity with 12h auto-close
+  if (mode === "now") {
+    const now = new Date();
+    const autoClose = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+
+    const [activity] = await db
+      .insert(activities)
+      .values({
+        title: "Untitled activity",
+        coordinatorId: user.id,
+        status: "open",
+        startsAt: now,
+        endsAt: autoClose,
+        shareCode: generateShareCode(),
+      })
+      .returning();
+
+    // Auto-check-in the coordinator (they're there — that's why they tapped Now)
+    await db.insert(attendances).values({
+      activityId: activity.id,
+      userId: user.id,
+      status: "checked_in",
+      checkedInAt: now,
+    });
+
+    return NextResponse.json(activity, { status: 201 });
+  }
 
   if (!title) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });

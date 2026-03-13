@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Activity {
@@ -10,6 +11,7 @@ interface Activity {
   status: string;
   shareCode: string;
   startsAt: string | null;
+  endsAt: string | null;
   location: string | null;
   createdAt: string;
 }
@@ -24,10 +26,16 @@ function formatDate(startsAt: string | null) {
   return `${date} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
-function isLive(startsAt: string | null): boolean {
-  if (!startsAt) return false;
-  const start = new Date(startsAt).getTime();
+function isLive(a: Activity): boolean {
+  if (a.status !== "open" || !a.startsAt) return false;
+  const start = new Date(a.startsAt).getTime();
   const now = Date.now();
+  // If endsAt is set (Now activities), live until endsAt
+  if (a.endsAt) {
+    const end = new Date(a.endsAt).getTime();
+    return now >= start && now <= end;
+  }
+  // Scheduled activities: live from 1h before to 4h after start
   const hourBefore = start - 60 * 60 * 1000;
   const fourHoursAfter = start + 4 * 60 * 60 * 1000;
   return now >= hourBefore && now <= fourHoursAfter;
@@ -63,7 +71,7 @@ function formatTime(startsAt: string | null) {
 }
 
 function ActivityCard({ a }: { a: Activity }) {
-  const live = isLive(a.startsAt);
+  const live = isLive(a);
   const time = formatTime(a.startsAt);
   const meta = [time, a.location].filter(Boolean).join(" · ");
   return (
@@ -106,9 +114,11 @@ function isUpcoming(a: Activity) {
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const authenticated = status === "authenticated";
+  const router = useRouter();
   const [created, setCreated] = useState<Activity[]>([]);
   const [attended, setAttended] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startingNow, setStartingNow] = useState(false);
 
   useEffect(() => {
     if (!authenticated) {
@@ -188,6 +198,30 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8">
+        <button
+          onClick={async () => {
+            setStartingNow(true);
+            const res = await fetch("/api/activities", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mode: "now" }),
+            });
+            if (res.ok) {
+              const activity = await res.json();
+              router.push(`/activity/${activity.id}`);
+            }
+            setStartingNow(false);
+          }}
+          disabled={startingNow}
+          className="w-full py-4 mb-6 bg-violet-600 text-white rounded-2xl text-lg font-bold flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors disabled:opacity-50 shadow-[0_4px_20px_rgba(124,58,237,0.25)]"
+        >
+          <span className="text-xl">⚡</span>
+          {startingNow ? "Starting..." : "Now"}
+        </button>
+        <p className="text-sm text-warm-gray-400 text-center -mt-4 mb-6">
+          Start a live activity — people can check in immediately
+        </p>
+
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-semibold text-bark-900">
             Your Activities
@@ -196,7 +230,7 @@ export default function Dashboard() {
             href="/new"
             className="px-4 py-2 bg-terracotta-500 text-cream rounded-lg text-sm font-medium hover:bg-terracotta-600 transition-colors"
           >
-            Create activity
+            Plan activity
           </Link>
         </div>
 

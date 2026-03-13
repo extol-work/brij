@@ -87,3 +87,45 @@ export async function PATCH(
 
   return NextResponse.json(updated);
 }
+
+// POST: coordinator on-behalf check-in (add a walk-up guest)
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const activity = await db.query.activities.findFirst({
+    where: and(eq(activities.id, id), eq(activities.coordinatorId, user.id)),
+  });
+  if (!activity) {
+    return NextResponse.json({ error: "Not found or not owner" }, { status: 404 });
+  }
+
+  if (activity.status !== "open") {
+    return NextResponse.json({ error: "Activity is not open" }, { status: 400 });
+  }
+
+  const body = await req.json();
+  const { guestName } = body;
+
+  if (!guestName || !guestName.trim()) {
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  }
+
+  const [attendance] = await db
+    .insert(attendances)
+    .values({
+      activityId: id,
+      guestName: guestName.trim(),
+      status: "checked_in",
+      checkedInAt: new Date(),
+    })
+    .returning();
+
+  return NextResponse.json(attendance, { status: 201 });
+}

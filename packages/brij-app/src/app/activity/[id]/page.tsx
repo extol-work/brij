@@ -19,6 +19,7 @@ interface Activity {
   isRecurring: boolean;
   recurringFrequency: string | null;
   seriesId: string | null;
+  createdAt: string;
 }
 
 interface Attendee {
@@ -40,13 +41,35 @@ function formatDateTime(startsAt: string | null) {
   return `${date} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
-function isLive(startsAt: string | null): boolean {
-  if (!startsAt) return false;
-  const start = new Date(startsAt).getTime();
+function isLive(activity: Activity | null): boolean {
+  if (!activity || activity.status !== "open" || !activity.startsAt) return false;
+  const start = new Date(activity.startsAt).getTime();
   const now = Date.now();
+  if (activity.endsAt) {
+    const end = new Date(activity.endsAt).getTime();
+    return now >= start && now <= end;
+  }
   const hourBefore = start - 60 * 60 * 1000;
   const fourHoursAfter = start + 4 * 60 * 60 * 1000;
   return now >= hourBefore && now <= fourHoursAfter;
+}
+
+function timeAgo(date: string): string {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  return `${hours}h ${mins % 60}m ago`;
+}
+
+function timeUntil(date: string): string {
+  const diff = new Date(date).getTime() - Date.now();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins} minutes`;
+  const hours = Math.floor(mins / 60);
+  return `${hours}h ${mins % 60}m`;
 }
 
 function parseTime(input: string): string | null {
@@ -95,6 +118,9 @@ export default function ActivityDetail() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [nextActivityId, setNextActivityId] = useState<string | null>(null);
+  const [showOnBehalf, setShowOnBehalf] = useState(false);
+  const [walkUpName, setWalkUpName] = useState("");
+  const [addingWalkUp, setAddingWalkUp] = useState(false);
 
   useEffect(() => {
     fetch(`/api/activities/${id}`)
@@ -176,8 +202,11 @@ export default function ActivityDetail() {
       ? `${window.location.origin}/join/${activity.shareCode}`
       : "";
 
-  const live = isLive(activity.startsAt);
+  const live = isLive(activity);
   const isCoordinator = currentUserId === activity.coordinatorId;
+  const isNowActivity = activity.endsAt !== null;
+  const autoCloseWarning = isNowActivity && activity.endsAt && live &&
+    (new Date(activity.endsAt).getTime() - Date.now()) < 60 * 60 * 1000;
 
   function copyLink() {
     navigator.clipboard.writeText(shareUrl);
@@ -225,6 +254,32 @@ export default function ActivityDetail() {
     } catch {
       alert("Check-in failed — network error");
     }
+  }
+
+  async function addWalkUp() {
+    if (!walkUpName.trim()) return;
+    setAddingWalkUp(true);
+    const res = await fetch(`/api/activities/${id}/attendees`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestName: walkUpName.trim() }),
+    });
+    if (res.ok) {
+      const attendance = await res.json();
+      setAttendees((prev) => [
+        ...prev,
+        {
+          id: attendance.id,
+          name: walkUpName.trim(),
+          status: "checked_in",
+          rsvpAt: new Date().toISOString(),
+          checkedInAt: new Date().toISOString(),
+          isGuest: true,
+        },
+      ]);
+      setWalkUpName("");
+    }
+    setAddingWalkUp(false);
   }
 
   const formatted = formatDateTime(activity.startsAt);
@@ -383,8 +438,59 @@ export default function ActivityDetail() {
           </>
         )}
 
-        {/* QR Code section */}
-        {isCoordinator && activity.status === "open" && (
+        {/* Auto-close warning banner */}
+        {autoCloseWarning && activity.endsAt && (
+          <div className="mb-6 flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+            <span className="text-lg shrink-0">⏱</span>
+            <div>
+              <p className="text-sm font-semibold">This activity closes in {timeUntil(activity.endsAt)}</p>
+              <p className="text-xs mt-0.5">After 12 hours, it&apos;ll close automatically.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Live mode: QR + share link always visible */}
+        {live && isCoordinator && (
+          <div className="mb-6">
+            <div className="live-header flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-sm font-semibold text-green-600">Live</span>
+              </div>
+              <span className="text-xs text-warm-gray-400">
+                Started {activity.startsAt ? timeAgo(activity.startsAt) : ""}
+                {isNowActivity && activity.endsAt && !autoCloseWarning && (
+                  <> · Auto-closes in {timeUntil(activity.endsAt)}</>
+                )}
+              </span>
+            </div>
+
+            <div className="bg-warm-gray-50 border border-warm-gray-200 rounded-xl p-6 text-center mb-4">
+              <div className="bg-white p-3 inline-block rounded-lg">
+                <QRCode value={shareUrl} size={160} />
+              </div>
+              <p className="text-sm text-warm-gray-500 font-medium mt-3">Scan to check in</p>
+              <p className="text-xs text-warm-gray-400 mt-1">Or share the link below</p>
+            </div>
+
+            <div className="flex gap-2 mb-6">
+              <input
+                value={shareUrl}
+                readOnly
+                className="flex-1 px-3 py-2.5 bg-warm-gray-50 border border-warm-gray-200 rounded-lg text-sm text-warm-gray-500"
+              />
+              <button
+                onClick={copyLink}
+                className="px-4 py-2.5 border border-warm-gray-200 rounded-lg text-sm font-medium hover:border-warm-gray-400 transition-colors"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Non-live QR toggle */}
+        {!live && isCoordinator && activity.status === "open" && (
           <div className="mb-6">
             <button
               onClick={() => setShowQR(!showQR)}
@@ -397,11 +503,9 @@ export default function ActivityDetail() {
                 <div className="bg-white p-3 inline-block rounded-lg">
                   <QRCode value={shareUrl} size={160} />
                 </div>
-                <p className="text-sm text-warm-gray-500 mt-2">
-                  {live ? "Show this at the event" : "Post this where people can scan"}
-                </p>
+                <p className="text-sm text-warm-gray-500 mt-2">Post this where people can scan</p>
                 <p className="text-xs text-warm-gray-400 mt-1">
-                  People scan to {live ? "check in" : "RSVP"}. No account needed.
+                  People scan to RSVP. No account needed.
                 </p>
               </div>
             )}
@@ -507,6 +611,72 @@ export default function ActivityDetail() {
                     </span>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* On-behalf check-in panel */}
+        {isCoordinator && live && (
+          <div className="mb-6">
+            {!showOnBehalf ? (
+              <button
+                onClick={() => setShowOnBehalf(true)}
+                className="w-full py-3 border-2 border-dashed border-warm-gray-200 rounded-xl text-warm-gray-500 font-medium flex items-center justify-center gap-2 hover:border-warm-gray-400 transition-colors"
+              >
+                + Check someone in
+              </button>
+            ) : (
+              <div className="bg-warm-gray-50 border border-warm-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-bark-900">Check someone in</h4>
+                  <button
+                    onClick={() => setShowOnBehalf(false)}
+                    className="text-xs text-warm-gray-400 hover:text-bark-900"
+                  >
+                    Close
+                  </button>
+                </div>
+                <p className="text-xs text-warm-gray-500 mb-3">
+                  For people without their phone, kids, or walk-ups.
+                </p>
+
+                {/* Existing RSVPs not yet checked in */}
+                {coming.length > 0 && (
+                  <div className="mb-3">
+                    {coming.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => checkInAttendee(a.id)}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white transition-colors text-left"
+                      >
+                        <span className="w-7 h-7 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                          {initial(a.name)}
+                        </span>
+                        <span className="text-sm font-medium text-bark-900 flex-1">{firstName(a.name)}</span>
+                        <span className="text-xs text-warm-gray-400">Not checked in</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Walk-up name input */}
+                <div className="flex gap-2">
+                  <input
+                    value={walkUpName}
+                    onChange={(e) => setWalkUpName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addWalkUp()}
+                    placeholder="Add a name (walk-up)..."
+                    className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-violet-400"
+                  />
+                  <button
+                    onClick={addWalkUp}
+                    disabled={!walkUpName.trim() || addingWalkUp}
+                    className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
+                  >
+                    {addingWalkUp ? "..." : "Add"}
+                  </button>
+                </div>
               </div>
             )}
           </div>

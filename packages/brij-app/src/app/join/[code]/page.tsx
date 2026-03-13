@@ -18,6 +18,7 @@ interface ActivityInfo {
   description: string | null;
   location: string | null;
   startsAt: string | null;
+  endsAt: string | null;
   attendees: Attendee[];
 }
 
@@ -31,10 +32,14 @@ function formatDateTime(startsAt: string | null) {
   return `${date} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
-function isLive(startsAt: string | null): boolean {
+function isLive(startsAt: string | null, endsAt: string | null): boolean {
   if (!startsAt) return false;
   const start = new Date(startsAt).getTime();
   const now = Date.now();
+  if (endsAt) {
+    const end = new Date(endsAt).getTime();
+    return now >= start && now <= end;
+  }
   const hourBefore = start - 60 * 60 * 1000;
   const fourHoursAfter = start + 4 * 60 * 60 * 1000;
   return now >= hourBefore && now <= fourHoursAfter;
@@ -62,7 +67,7 @@ export default function JoinActivity() {
 
   async function handleAction(asGuest: boolean) {
     setSubmitting(true);
-    const live = activity ? isLive(activity.startsAt) : false;
+    const live = activity ? isLive(activity.startsAt, activity.endsAt) : false;
     const body = {
       ...(asGuest ? { guestName } : {}),
       ...(live ? { checkin: true } : {}),
@@ -99,7 +104,7 @@ export default function JoinActivity() {
     );
   }
 
-  const live = isLive(activity.startsAt);
+  const live = isLive(activity.startsAt, activity.endsAt);
 
   if (submitted) {
     const coming = activity.attendees.filter((a) => a.status === "coming");

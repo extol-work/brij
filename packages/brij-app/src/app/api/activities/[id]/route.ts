@@ -18,6 +18,16 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Auto-close: if endsAt has passed and activity is still open, close it
+  if (activity.status === "open" && activity.endsAt && new Date(activity.endsAt) < new Date()) {
+    const [closed] = await db
+      .update(activities)
+      .set({ status: "closed", updatedAt: new Date() })
+      .where(eq(activities.id, id))
+      .returning();
+    return NextResponse.json(closed);
+  }
+
   return NextResponse.json(activity);
 }
 
