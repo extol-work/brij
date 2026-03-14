@@ -7,6 +7,25 @@
  * Breaking changes to these types follow semver.
  */
 
+// ---------------------------------------------------------------------------
+// Envelope — every event gets wrapped with metadata for ordering + idempotency
+// ---------------------------------------------------------------------------
+
+export interface BrijEventEnvelope<T extends BrijEventPayload = BrijEventPayload> {
+  /** Unique event ID (UUID) — idempotency key for consumers */
+  id: string;
+  /** ISO-8601 timestamp when the event occurred */
+  timestamp: string;
+  /** Monotonic sequence for ordering within a poll batch */
+  sequence: number;
+  /** Event payload */
+  data: T;
+}
+
+// ---------------------------------------------------------------------------
+// Event payloads
+// ---------------------------------------------------------------------------
+
 export interface ActivityCompletedEvent {
   type: "activity.completed";
   activityId: string;
@@ -14,6 +33,14 @@ export interface ActivityCompletedEvent {
   coordinatorId: string;
   completedAt: string;
   attendeeCount: number;
+  /** Summary written by coordinator at closure */
+  summary: string | null;
+  sentiment: string | null;
+  location: string | null;
+  activityType: string | null;
+  /** Series context for recurring activities */
+  seriesId: string | null;
+  isRecurring: boolean;
 }
 
 export interface AttendanceConfirmedEvent {
@@ -29,8 +56,10 @@ export interface ContributionLoggedEvent {
   activityId: string;
   userId: string | null;
   guestName: string | null;
-  contributionType: string;
+  contributionType: "attendance" | "labor" | "supply" | "cash" | "other";
   description: string | null;
+  quantity: number | null;
+  unit: string | null;
 }
 
 export interface UserDeletedEvent {
@@ -39,8 +68,21 @@ export interface UserDeletedEvent {
   deletedAt: string;
 }
 
-export type BrijEvent =
+export interface PeerAttestationEvent {
+  type: "peer.attested";
+  activityId: string;
+  attesterId: string;
+  attesteeId: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export type BrijEventPayload =
   | ActivityCompletedEvent
   | AttendanceConfirmedEvent
   | ContributionLoggedEvent
-  | UserDeletedEvent;
+  | UserDeletedEvent
+  | PeerAttestationEvent;
+
+/** Convenience alias — a fully wrapped event */
+export type BrijEvent = BrijEventEnvelope;
