@@ -220,7 +220,7 @@ export default function Dashboard() {
 
             {/* Social proof */}
             <p className="text-sm text-warm-gray-400 mb-6 md:mb-8">
-              <span className="font-semibold text-warm-gray-500">847 activities</span> recorded by <span className="font-semibold text-warm-gray-500">142 crews</span> on brij
+              <span className="font-semibold text-warm-gray-500">847 activities</span> recorded by <span className="font-semibold text-warm-gray-500">142 groups</span> on brij
             </p>
 
             {/* CTA */}
@@ -231,7 +231,7 @@ export default function Dashboard() {
               Sign in to get started
             </button>
             <p className="text-sm text-warm-gray-400 mt-3">
-              Free · Track activities with your crew
+              Free · Track activities with your group
             </p>
           </div>
         </div>
