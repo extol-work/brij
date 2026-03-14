@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { firstName, initial } from "@/lib/names";
+import { saveCheckinOffline, syncPendingCheckins } from "@/lib/offline-checkin";
 
 interface Attendee {
   name: string;
@@ -67,6 +68,23 @@ function JoinActivityInner() {
   const [guestName, setGuestName] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [savedOffline, setSavedOffline] = useState(false);
+
+  // Register service worker + sync pending check-ins when back online
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+    const handleOnline = () => {
+      syncPendingCheckins().then((n) => {
+        if (n > 0) setSavedOffline(false);
+      });
+    };
+    window.addEventListener("online", handleOnline);
+    // Try syncing on mount too
+    handleOnline();
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/checkin/${code}`)
@@ -75,7 +93,22 @@ function JoinActivityInner() {
         return r.json();
       })
       .then(setActivity)
-      .catch(() => setError("This activity doesn't exist or is no longer open."));
+      .catch(() => {
+        if (!navigator.onLine) {
+          // Offline — show minimal UI so user can still check in
+          setActivity({
+            id: "",
+            title: "Activity",
+            description: null,
+            location: null,
+            startsAt: new Date().toISOString(),
+            endsAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+            attendees: [],
+          });
+        } else {
+          setError("This activity doesn't exist or is no longer open.");
+        }
+      });
   }, [code]);
 
   // Auto-claim attendance when returning from sign-in (only with ?claim=1)
@@ -106,17 +139,24 @@ function JoinActivityInner() {
       ...(live ? { checkin: true } : {}),
     };
 
-    const res = await fetch(`/api/checkin/${code}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      const res = await fetch(`/api/checkin/${code}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-    if (res.ok) {
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Something went wrong");
+      }
+    } catch {
+      // Network failure — save offline
+      await saveCheckinOffline(code, body);
+      setSavedOffline(true);
       setSubmitted(true);
-    } else {
-      const data = await res.json();
-      setError(data.error || "Something went wrong");
     }
     setSubmitting(false);
   }
@@ -151,16 +191,21 @@ function JoinActivityInner() {
         </header>
         <div className="flex items-center justify-center" style={{ minHeight: "calc(100vh - 65px)" }}>
           <div className="text-center max-w-md px-6">
+            {savedOffline && (
+              <div className="mb-4 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                Saved offline — will sync when connected
+              </div>
+            )}
             {live ? (
               <>
                 <h1 className="text-2xl font-bold text-bark-900 mb-1">
-                  You&apos;re checked in!
+                  {savedOffline ? "Check-in saved!" : "You\u0027re checked in!"}
                 </h1>
                 <p className="text-sm text-warm-gray-500 mb-4">
                   {activity.title} · {new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                 </p>
-                <div className="mx-auto w-[160px] h-[160px] rounded-full bg-green-600 text-white flex items-center justify-center text-5xl font-bold shadow-[0_4px_20px_rgba(22,163,74,0.3)]">
-                  ✓
+                <div className={`mx-auto w-[160px] h-[160px] rounded-full ${savedOffline ? "bg-amber-500" : "bg-green-600"} text-white flex items-center justify-center text-5xl font-bold shadow-[0_4px_20px_rgba(22,163,74,0.3)]`}>
+                  {savedOffline ? "◎" : "✓"}
                 </div>
               </>
             ) : (
