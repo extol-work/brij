@@ -69,7 +69,12 @@ export default function GroupDetailPage() {
   if (!group) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-warm-gray-500">Group not found or you are not a member.</p>
+        <div className="text-center">
+          <p className="text-warm-gray-500 mb-4">Group not found or you are not a member.</p>
+          <Link href="/" className="text-violet-600 font-medium hover:underline">
+            Go to dashboard
+          </Link>
+        </div>
       </div>
     );
   }
