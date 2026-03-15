@@ -349,7 +349,7 @@ function JournalSection({
       {expanded && loaded && (
         <div className="mt-3 px-1">
           {/* Today's entries */}
-          {todayEntries.map((entry) => (
+          {todayEntries.slice(0, 3).map((entry) => (
             <JournalEntryRow
               key={entry.id}
               entry={entry}
@@ -358,6 +358,11 @@ function JournalSection({
               onDelete={() => handleDelete(entry.id)}
             />
           ))}
+          {todayEntries.length > 3 && (
+            <p className="text-xs text-warm-gray-400 pl-5 py-1">
+              +{todayEntries.length - 3} more today
+            </p>
+          )}
 
           {/* Past days collapsed */}
           {pastDays.map(({ label, entries: dayEntries }) => (

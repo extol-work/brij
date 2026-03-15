@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import QRCode from "react-qr-code";
 
 interface Member {
   id: string;
@@ -42,6 +43,7 @@ export default function GroupDetailPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"journal" | "members" | "settings">("journal");
   const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -144,8 +146,32 @@ export default function GroupDetailPage() {
               <p className="text-[13px] text-warm-gray-500 truncate">{group.description}</p>
             )}
           </div>
+          <button onClick={() => setShowQR(true)} className="shrink-0 p-1 rounded-lg hover:bg-warm-gray-100 transition-colors">
+            <QRCode
+              value={`${typeof window !== "undefined" ? window.location.origin : ""}/groups/join/${group.joinCode}`}
+              size={36}
+              level="L"
+            />
+          </button>
         </div>
       </div>
+
+      {/* QR overlay */}
+      {showQR && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
+          onClick={() => setShowQR(false)}
+        >
+          <div className="bg-white rounded-2xl p-8" onClick={(e) => e.stopPropagation()}>
+            <QRCode
+              value={`${typeof window !== "undefined" ? window.location.origin : ""}/groups/join/${group.joinCode}`}
+              size={256}
+              level="M"
+            />
+            <p className="text-center text-sm text-warm-gray-500 mt-4">Scan to join <strong>{group.name}</strong></p>
+          </div>
+        </div>
+      )}
 
       {/* Stats bar */}
       <div className="max-w-lg mx-auto px-4 py-3">
@@ -237,6 +263,28 @@ export default function GroupDetailPage() {
 
         {tab === "members" && (
           <div>
+            {/* Invite by email (coordinator only) — above member list */}
+            {isCoordinator && (
+              <form onSubmit={handleInvite} className="flex gap-2 mb-4">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                  placeholder="Invite by email"
+                  className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
+                />
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+                >
+                  Invite
+                </button>
+              </form>
+            )}
+            {inviteError && <p className="text-sm text-red-600 mb-4">{inviteError}</p>}
+
             {/* Member list */}
             <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200 mb-4">
               {group.members.map((m) => (
@@ -263,7 +311,7 @@ export default function GroupDetailPage() {
             </div>
 
             {/* Share invite link */}
-            <div className="mb-4 p-3 bg-violet-50 border border-violet-200 rounded-lg">
+            <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
               <p className="text-xs text-violet-600 font-semibold mb-2">Invite link</p>
               <div className="flex gap-2">
                 <input
@@ -284,28 +332,6 @@ export default function GroupDetailPage() {
                 </button>
               </div>
             </div>
-
-            {/* Invite by email (coordinator only) */}
-            {isCoordinator && (
-              <form onSubmit={handleInvite} className="flex gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                  placeholder="Or invite by email"
-                  className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
-                />
-                <button
-                  type="submit"
-                  disabled={inviting}
-                  className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
-                >
-                  Invite
-                </button>
-              </form>
-            )}
-            {inviteError && <p className="text-sm text-red-600 mt-2">{inviteError}</p>}
           </div>
         )}
 

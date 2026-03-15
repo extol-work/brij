@@ -306,7 +306,7 @@ export default function NewGroupOnboarding() {
               disabled={creating}
               className="w-full mt-2 py-3 text-sm text-[#999] hover:text-[#666]"
             >
-              Skip — I&apos;ll invite people later
+              Invite later — just create the group
             </button>
           </div>
         )}
