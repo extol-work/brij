@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -17,26 +17,41 @@ interface Activity {
   createdAt: string;
 }
 
-function formatDate(startsAt: string | null) {
-  if (!startsAt) return "No date set";
+interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  role: string;
+  lastSeenAt: string | null;
+}
+
+interface JournalEntry {
+  id: string;
+  text: string;
+  createdAt: string;
+  authorId: string;
+  authorName: string | null;
+  authorEmail: string;
+}
+
+function formatTime(startsAt: string | null) {
+  if (!startsAt) return null;
   const d = new Date(startsAt);
-  const date = d.toLocaleDateString();
-  const hours = d.getHours();
-  const mins = d.getMinutes();
-  if (hours === 0 && mins === 0) return date;
-  return `${date} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  const h = d.getHours();
+  const m = d.getMinutes();
+  if (h === 0 && m === 0) return null;
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 function isLive(a: Activity): boolean {
   if (a.status !== "open" || !a.startsAt) return false;
   const start = new Date(a.startsAt).getTime();
   const now = Date.now();
-  // If endsAt is set (Now activities), live until endsAt
   if (a.endsAt) {
     const end = new Date(a.endsAt).getTime();
     return now >= start && now <= end;
   }
-  // Scheduled activities: live from 1h before to 4h after start
   const hourBefore = start - 60 * 60 * 1000;
   const fourHoursAfter = start + 4 * 60 * 60 * 1000;
   return now >= hourBefore && now <= fourHoursAfter;
@@ -60,15 +75,6 @@ function DateBlock({ startsAt }: { startsAt: string | null }) {
       <div className="text-2xl font-bold text-bark-900 leading-tight">{day}</div>
     </div>
   );
-}
-
-function formatTime(startsAt: string | null) {
-  if (!startsAt) return null;
-  const d = new Date(startsAt);
-  const h = d.getHours();
-  const m = d.getMinutes();
-  if (h === 0 && m === 0) return null;
-  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 function ActivityCard({ a }: { a: Activity }) {
@@ -147,22 +153,387 @@ function isUpcoming(a: Activity) {
   return a.status === "open" || a.status === "draft";
 }
 
+/* ── Group Switcher ── */
+
+function GroupSwitcher({
+  groups,
+  activeGroupId,
+  onSelect,
+}: {
+  groups: Group[];
+  activeGroupId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-0 mb-4">
+      <div className="flex gap-4 overflow-x-auto flex-1 px-1 py-2 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+        {groups.map((g) => (
+          <button
+            key={g.id}
+            onClick={() => onSelect(g.id)}
+            className="flex flex-col items-center gap-1 shrink-0"
+          >
+            <div
+              className={`w-[52px] h-[52px] rounded-full flex items-center justify-center text-lg font-bold text-white ${
+                activeGroupId === g.id
+                  ? "ring-[2.5px] ring-offset-2 ring-violet-600"
+                  : ""
+              }`}
+              style={{ backgroundColor: g.color }}
+            >
+              {g.name.charAt(0).toUpperCase()}
+            </div>
+            <span
+              className={`text-[11px] max-w-[60px] text-center truncate ${
+                activeGroupId === g.id
+                  ? "text-bark-900 font-semibold"
+                  : "text-warm-gray-500"
+              }`}
+            >
+              {g.name}
+            </span>
+          </button>
+        ))}
+      </div>
+      <Link
+        href="/groups"
+        className="shrink-0 pr-1 text-xs text-violet-600 font-semibold whitespace-nowrap"
+      >
+        My groups &rsaquo;
+      </Link>
+    </div>
+  );
+}
+
+/* ── Journal Section ── */
+
+function JournalSection({
+  group,
+  userId,
+}: {
+  group: Group;
+  userId: string;
+}) {
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  const [text, setText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Prefetch entries on mount
+  useEffect(() => {
+    fetch(`/api/groups/${group.id}/journal`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setEntries(data);
+      })
+      .finally(() => setLoaded(true));
+  }, [group.id]);
+
+  const todayEntries = entries.filter((e) => {
+    const d = new Date(e.createdAt);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  });
+
+  const pastDays = groupByDay(entries.filter((e) => {
+    const d = new Date(e.createdAt);
+    const now = new Date();
+    return d.toDateString() !== now.toDateString();
+  }));
+
+  async function handlePost() {
+    if (!text.trim()) return;
+    setPosting(true);
+    const res = await fetch(`/api/groups/${group.id}/journal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (res.ok) {
+      const entry = await res.json();
+      setEntries((prev) => [entry, ...prev]);
+      setText("");
+      setExpanded(false);
+    }
+    setPosting(false);
+  }
+
+  async function handleDelete(entryId: string) {
+    const res = await fetch(`/api/groups/${group.id}/journal`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryId }),
+    });
+    if (res.ok) {
+      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    }
+  }
+
+  const weekCount = entries.filter((e) => {
+    const d = new Date(e.createdAt);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return d >= weekAgo;
+  }).length;
+
+  return (
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-2 px-1">
+        <h3 className="text-base font-bold text-bark-900">
+          Journal <span style={{ color: group.color }}>for {group.name}</span>
+        </h3>
+      </div>
+
+      {/* Input */}
+      <div
+        className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border mb-2 transition-all ${
+          expanded
+            ? "border-violet-600 shadow-[0_0_0_1px_rgba(124,58,237,1)]"
+            : "border-[#E8D5BC] bg-[#FEFCF8]"
+        }`}
+        onClick={() => setExpanded(true)}
+      >
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
+          style={{ backgroundColor: "#8B6548" }}
+        >
+          {userId ? "Y" : "?"}
+        </div>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onFocus={() => setExpanded(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && text.trim()) handlePost();
+          }}
+          placeholder="What are you working on?"
+          className="flex-1 text-sm bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
+        />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePost();
+          }}
+          disabled={!text.trim() || posting}
+          className={`px-3.5 py-1.5 rounded-md text-xs font-semibold text-white shrink-0 transition-opacity ${
+            text.trim() ? "bg-[#8B6548] opacity-100" : "bg-[#8B6548] opacity-40"
+          }`}
+        >
+          Post
+        </button>
+      </div>
+
+      {/* Collapsed count */}
+      {!expanded && loaded && entries.length > 0 && (
+        <p className="text-xs text-warm-gray-400 text-center">
+          {todayEntries.length} {todayEntries.length === 1 ? "entry" : "entries"} today · {weekCount} this week
+        </p>
+      )}
+
+      {/* Empty state */}
+      {!expanded && loaded && entries.length === 0 && (
+        <p className="text-sm text-warm-gray-400 text-center py-3 leading-relaxed">
+          Share what you&apos;re working on.<br />
+          No replies, no pressure — just a record<br />
+          of the work that keeps things running.
+        </p>
+      )}
+
+      {/* Expanded feed */}
+      {expanded && loaded && (
+        <div className="mt-3 px-1">
+          {/* Today's entries */}
+          {todayEntries.map((entry) => (
+            <JournalEntryRow
+              key={entry.id}
+              entry={entry}
+              groupColor={group.color}
+              canDelete={entry.authorId === userId || group.role === "coordinator"}
+              onDelete={() => handleDelete(entry.id)}
+            />
+          ))}
+
+          {/* Past days collapsed */}
+          {pastDays.map(({ label, entries: dayEntries }) => (
+            <CollapsedDay key={label} label={label} entries={dayEntries} groupColor={group.color} />
+          ))}
+
+          {/* Weekly rollup */}
+          {weekCount > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3.5 bg-[#FDF8F0] border border-[#E8D5BC] rounded-xl my-4">
+              <span className="text-[28px] font-bold text-[#5C3D2E] leading-none">{weekCount}</span>
+              <span className="text-[13px] text-[#8B6548]">
+                contributions this week
+              </span>
+            </div>
+          )}
+
+          {/* Collapse button */}
+          <button
+            onClick={() => setExpanded(false)}
+            className="w-full text-xs text-warm-gray-400 py-2 hover:text-warm-gray-600"
+          >
+            Collapse journal
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JournalEntryRow({
+  entry,
+  groupColor,
+  canDelete,
+  onDelete,
+}: {
+  entry: JournalEntry;
+  groupColor: string;
+  canDelete: boolean;
+  onDelete: () => void;
+}) {
+  const time = new Date(entry.createdAt).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const displayName = entry.authorName || entry.authorEmail.split("@")[0];
+
+  return (
+    <div className="flex gap-2.5 py-2.5 border-l-2 pl-3.5 ml-1 mb-0.5" style={{ borderColor: "#D4A574" }}>
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
+        style={{ backgroundColor: groupColor }}
+      >
+        {displayName.charAt(0).toUpperCase()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-semibold text-bark-900">{displayName}</p>
+        <p className="text-sm text-bark-900 leading-snug mt-0.5">{entry.text}</p>
+        <div className="flex items-center gap-3 mt-1">
+          <span className="text-[11px] text-warm-gray-400">{time}</span>
+          {canDelete && (
+            <button
+              onClick={onDelete}
+              className="text-[11px] text-warm-gray-300 hover:text-red-500 transition-colors"
+            >
+              delete
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CollapsedDay({
+  label,
+  entries,
+  groupColor,
+}: {
+  label: string;
+  entries: JournalEntry[];
+  groupColor: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const uniqueAuthors = [...new Set(entries.map((e) => e.authorName || e.authorEmail.split("@")[0]))];
+
+  return (
+    <div className="my-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-3.5 py-2.5 bg-[#FEFCF8] border border-warm-gray-200 rounded-lg hover:bg-[#faf5ed] transition-colors"
+      >
+        <span className="text-[13px] text-warm-gray-500">
+          <strong className="text-bark-900">{label}</strong> · {entries.length} {entries.length === 1 ? "entry" : "entries"}
+        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-1.5">
+            {uniqueAuthors.slice(0, 3).map((name, i) => (
+              <div
+                key={i}
+                className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold text-white border-[1.5px] border-[#FEFCF8]"
+                style={{ backgroundColor: groupColor }}
+              >
+                {name.charAt(0).toUpperCase()}
+              </div>
+            ))}
+          </div>
+          <span className="text-xs text-warm-gray-400">{expanded ? "▾" : "›"}</span>
+        </div>
+      </button>
+      {expanded && (
+        <div className="mt-1">
+          {entries.map((entry) => (
+            <JournalEntryRow
+              key={entry.id}
+              entry={entry}
+              groupColor={groupColor}
+              canDelete={false}
+              onDelete={() => {}}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function groupByDay(entries: JournalEntry[]): Array<{ label: string; entries: JournalEntry[] }> {
+  const days = new Map<string, JournalEntry[]>();
+  for (const entry of entries) {
+    const d = new Date(entry.createdAt);
+    const key = d.toDateString();
+    if (!days.has(key)) days.set(key, []);
+    days.get(key)!.push(entry);
+  }
+
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  return Array.from(days.entries()).map(([key, entries]) => {
+    let label: string;
+    if (key === yesterday.toDateString()) {
+      label = "Yesterday";
+    } else {
+      const d = new Date(key);
+      label = d.toLocaleDateString(undefined, { weekday: "long" });
+      // If older than a week, add the date
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      if (d < weekAgo) {
+        label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+    }
+    return { label, entries };
+  });
+}
+
+/* ── Main Dashboard ── */
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const authenticated = status === "authenticated";
   const router = useRouter();
   const [created, setCreated] = useState<Activity[]>([]);
   const [attended, setAttended] = useState<Activity[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [startingNow, setStartingNow] = useState(false);
   const [pastLimit, setPastLimit] = useState(10);
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     if (!authenticated) {
       setLoading(false);
       return;
     }
-    // Check consent before loading activities
+    // Check consent, then load activities + groups
     fetch("/api/me")
       .then((r) => r.json())
       .then((me) => {
@@ -170,12 +541,18 @@ export default function Dashboard() {
           router.replace("/consent?callbackUrl=/");
           return;
         }
-        return fetch("/api/activities")
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.created) setCreated(data.created);
-            if (data.attended) setAttended(data.attended);
-          });
+        setUserId(me.id);
+        return Promise.all([
+          fetch("/api/activities").then((r) => r.json()),
+          fetch("/api/groups").then((r) => r.json()),
+        ]).then(([actData, grpData]) => {
+          if (actData.created) setCreated(actData.created);
+          if (actData.attended) setAttended(actData.attended);
+          if (Array.isArray(grpData)) {
+            setGroups(grpData);
+            if (grpData.length > 0) setActiveGroupId(grpData[0].id);
+          }
+        });
       })
       .finally(() => setLoading(false));
   }, [authenticated, router]);
@@ -185,15 +562,12 @@ export default function Dashboard() {
   if (!authenticated) {
     return (
       <div className="min-h-screen flex flex-col">
-        {/* Hero */}
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-[500px] mx-auto px-6 py-8 md:py-16">
             <h1 className="text-7xl font-bold text-bark-900 mb-2">brij</h1>
             <p className="text-2xl text-warm-gray-500 mb-8">
               Build History Together
             </p>
-
-            {/* Three features — left-aligned with boxed icons */}
             <div className="space-y-4 md:space-y-6 max-w-xs mx-auto mb-12 md:mb-16">
               <div className="flex gap-3 items-start text-left">
                 <div className="w-9 h-9 rounded-lg bg-[#F5E6D0] border border-[#E8D5BC] flex items-center justify-center text-bark-900 text-lg shrink-0">+</div>
@@ -217,13 +591,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-
-            {/* Social proof */}
             <p className="text-sm text-warm-gray-400 mb-6 md:mb-8">
               <span className="font-semibold text-warm-gray-500">847 activities</span> recorded by <span className="font-semibold text-warm-gray-500">142 groups</span> on brij
             </p>
-
-            {/* CTA */}
             <button
               onClick={() => signIn()}
               className="px-6 py-3 text-xl bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
@@ -235,8 +605,6 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-
-        {/* Footer */}
         <footer className="border-t border-warm-gray-200 py-4">
           <div className="text-center">
             <p className="text-xl text-warm-gray-400 font-light">
@@ -276,6 +644,8 @@ export default function Dashboard() {
   const hasPast = allPast.length > 0;
   const hasNothing = !hasUpcoming && !hasPast;
 
+  const activeGroup = groups.find((g) => g.id === activeGroupId) || null;
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
@@ -295,7 +665,15 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-4xl mx-auto px-6 py-6">
+        {/* Group Switcher */}
+        <GroupSwitcher
+          groups={groups}
+          activeGroupId={activeGroupId}
+          onSelect={setActiveGroupId}
+        />
+
+        {/* Now Button */}
         <button
           onClick={async () => {
             setStartingNow(true);
@@ -311,22 +689,28 @@ export default function Dashboard() {
             setStartingNow(false);
           }}
           disabled={startingNow}
-          className="w-full py-4 mb-6 bg-violet-600 text-white rounded-2xl text-lg font-bold flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors disabled:opacity-50 shadow-[0_4px_20px_rgba(124,58,237,0.25)]"
+          className="w-full py-4 mb-2 bg-violet-600 text-white rounded-2xl text-lg font-bold flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors disabled:opacity-50 shadow-[0_4px_20px_rgba(124,58,237,0.25)]"
         >
           <span className="text-xl">⚡</span>
           {startingNow ? "Starting..." : "Now"}
         </button>
-        <p className="text-sm text-warm-gray-400 text-center -mt-4 mb-6">
-          Start a live activity — people can check in immediately
+        <p className="text-sm text-warm-gray-400 text-center mb-6">
+          Start something — share the link, people show up
         </p>
 
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-semibold text-bark-900">
+        {/* Journal Section */}
+        {activeGroup && (
+          <JournalSection group={activeGroup} userId={userId} />
+        )}
+
+        {/* Activities */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-bark-900">
             Your Activities
           </h2>
           <Link
             href="/new"
-            className="px-5 py-2.5 bg-terracotta-500 text-cream rounded-lg text-base font-medium hover:bg-terracotta-600 transition-colors"
+            className="px-4 py-2 bg-violet-50 text-violet-600 rounded-lg text-sm font-semibold hover:bg-violet-100 transition-colors"
           >
             Plan activity
           </Link>
