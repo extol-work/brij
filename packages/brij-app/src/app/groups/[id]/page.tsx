@@ -52,6 +52,7 @@ export default function GroupDetailPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
+  const [todayExpanded, setTodayExpanded] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -238,11 +239,11 @@ export default function GroupDetailPage() {
               </button>
             </div>
 
-            {/* Today's entries (max 3, then "+N more") */}
+            {/* Today's entries (max 3 collapsed, expand to all) */}
             {todayEntries.length > 0 && (
               <div className="mb-3">
                 <p className="text-[13px] font-semibold text-warm-gray-500 mb-2">Today</p>
-                {todayEntries.slice(0, 3).map((entry) => (
+                {(todayExpanded ? todayEntries : todayEntries.slice(0, 3)).map((entry) => (
                   <EntryRow
                     key={entry.id}
                     entry={entry}
@@ -251,10 +252,21 @@ export default function GroupDetailPage() {
                     onDelete={() => handleDelete(entry.id)}
                   />
                 ))}
-                {todayEntries.length > 3 && (
-                  <p className="text-xs text-warm-gray-400 pl-5 py-1">
+                {todayEntries.length > 3 && !todayExpanded && (
+                  <button
+                    onClick={() => setTodayExpanded(true)}
+                    className="text-xs text-violet-600 font-medium pl-5 py-1 hover:underline"
+                  >
                     +{todayEntries.length - 3} more today
-                  </p>
+                  </button>
+                )}
+                {todayExpanded && todayEntries.length > 3 && (
+                  <button
+                    onClick={() => setTodayExpanded(false)}
+                    className="w-full text-xs text-warm-gray-400 py-2 hover:text-warm-gray-600"
+                  >
+                    Collapse
+                  </button>
                 )}
               </div>
             )}
