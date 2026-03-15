@@ -28,6 +28,7 @@ interface GroupDetail {
   name: string;
   description: string | null;
   color: string;
+  joinCode: string;
   members: Member[];
   entryCount: number;
   currentMembership: { role: string };
@@ -39,7 +40,8 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"journal" | "members">("journal");
+  const [tab, setTab] = useState<"journal" | "members" | "settings">("journal");
+  const [copied, setCopied] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -162,7 +164,7 @@ export default function GroupDetailPage() {
       {/* Tabs */}
       <div className="max-w-lg mx-auto px-4">
         <div className="flex gap-1 border-b border-warm-gray-200 mb-4">
-          {(["journal", "members"] as const).map((t) => (
+          {(["journal", "members", ...(isCoordinator ? ["settings" as const] : [])] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -260,7 +262,30 @@ export default function GroupDetailPage() {
               ))}
             </div>
 
-            {/* Invite form (coordinator only) */}
+            {/* Share invite link */}
+            <div className="mb-4 p-3 bg-violet-50 border border-violet-200 rounded-lg">
+              <p className="text-xs text-violet-600 font-semibold mb-2">Invite link</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/groups/join/${group.joinCode}`}
+                  className="flex-1 px-3 py-2 bg-white border border-violet-200 rounded-lg text-sm text-bark-900 font-mono"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/groups/join/${group.joinCode}`);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 shrink-0"
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            {/* Invite by email (coordinator only) */}
             {isCoordinator && (
               <form onSubmit={handleInvite} className="flex gap-2">
                 <input
@@ -268,7 +293,7 @@ export default function GroupDetailPage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   required
-                  placeholder="Invite by email"
+                  placeholder="Or invite by email"
                   className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
                 />
                 <button
@@ -282,6 +307,10 @@ export default function GroupDetailPage() {
             )}
             {inviteError && <p className="text-sm text-red-600 mt-2">{inviteError}</p>}
           </div>
+        )}
+
+        {tab === "settings" && isCoordinator && (
+          <EditGroupForm group={group} onUpdated={(g) => setGroup({ ...group, ...g })} />
         )}
       </div>
     </div>
@@ -370,6 +399,68 @@ function CollapsedDay({
         </div>
       )}
     </div>
+  );
+}
+
+function EditGroupForm({
+  group,
+  onUpdated,
+}: {
+  group: GroupDetail;
+  onUpdated: (g: { name: string; description: string | null; color: string }) => void;
+}) {
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description || "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const res = await fetch(`/api/groups/${group.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description: description || null }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      onUpdated(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+    setSaving(false);
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-bark-900 mb-1">Group name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-bark-900 mb-1">Description</label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What does this group do?"
+          className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={saving}
+        className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+      >
+        {saved ? "Saved!" : saving ? "Saving..." : "Save changes"}
+      </button>
+    </form>
   );
 }
 

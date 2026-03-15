@@ -40,12 +40,14 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await db.transaction(async (tx) => {
+    const joinCode = Math.random().toString(36).slice(2, 8);
     const [group] = await tx
       .insert(groups)
       .values({
         name: name.trim(),
         description: description?.trim() || null,
         color: color || "#7c3aed",
+        joinCode,
         createdById: user.id,
       })
       .returning();

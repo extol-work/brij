@@ -75,3 +75,51 @@ export async function GET(_req: NextRequest, { params }: Params) {
     currentMembership: membership,
   });
 }
+
+/** PATCH /api/groups/:id — edit group name/description (coordinator only) */
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+
+  const membership = await db.query.groupMemberships.findFirst({
+    where: and(
+      eq(groupMemberships.groupId, id),
+      eq(groupMemberships.userId, user.id),
+      eq(groupMemberships.role, "coordinator")
+    ),
+  });
+
+  if (!membership) {
+    return NextResponse.json({ error: "Must be coordinator" }, { status: 403 });
+  }
+
+  const body = await req.json();
+  const updates: Record<string, unknown> = {};
+
+  if (body.name !== undefined) {
+    if (typeof body.name !== "string" || body.name.trim().length === 0) {
+      return NextResponse.json({ error: "Name cannot be empty" }, { status: 400 });
+    }
+    updates.name = body.name.trim();
+  }
+  if (body.description !== undefined) {
+    updates.description = body.description?.trim() || null;
+  }
+  if (body.color !== undefined) {
+    updates.color = body.color;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  const [updated] = await db
+    .update(groups)
+    .set(updates)
+    .where(eq(groups.id, id))
+    .returning();
+
+  return NextResponse.json(updated);
+}

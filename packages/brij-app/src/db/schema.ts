@@ -106,6 +106,7 @@ export const groups = pgTable("groups", {
   name: text("name").notNull(),
   description: text("description"),
   color: text("color").default("#7c3aed").notNull(), // hex for avatar
+  joinCode: text("join_code").unique().notNull(),
   createdById: uuid("created_by_id")
     .references(() => users.id)
     .notNull(),
