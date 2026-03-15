@@ -58,13 +58,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Already a member", groupId: group.id }, { status: 409 });
   }
 
-  // Invite-only groups: don't auto-join
+  // Invite-only groups: create pending membership on explicit request
   if (group.membershipMode === "invite_only") {
+    // Check if requesting admission (explicit action)
+    const { requestAdmission } = body;
+    if (requestAdmission) {
+      await db.insert(groupMemberships).values({
+        groupId: group.id,
+        userId: user.id,
+        role: "member",
+        status: "pending",
+      });
+      return NextResponse.json({
+        status: "pending",
+        groupId: group.id,
+        name: group.name,
+        message: "Your request has been sent to the coordinator.",
+      }, { status: 201 });
+    }
+
     return NextResponse.json({
       error: "invite_only",
       groupId: group.id,
       name: group.name,
-      message: "This group is invite-only. Ask the coordinator for an invite.",
     }, { status: 403 });
   }
 
@@ -72,6 +88,7 @@ export async function POST(req: NextRequest) {
     groupId: group.id,
     userId: user.id,
     role: "member",
+    status: "active",
   });
 
   return NextResponse.json({ groupId: group.id, name: group.name }, { status: 201 });

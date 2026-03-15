@@ -13,11 +13,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const { id } = await params;
 
-  // Verify membership
+  // Verify active membership
   const membership = await db.query.groupMemberships.findFirst({
     where: and(
       eq(groupMemberships.groupId, id),
-      eq(groupMemberships.userId, user.id)
+      eq(groupMemberships.userId, user.id),
+      eq(groupMemberships.status, "active")
     ),
   });
 
@@ -38,6 +39,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       id: groupMemberships.id,
       userId: groupMemberships.userId,
       role: groupMemberships.role,
+      status: groupMemberships.status,
       joinedAt: groupMemberships.joinedAt,
       name: users.name,
       email: users.email,

@@ -22,6 +22,8 @@ export default function JoinGroup() {
   const [joined, setJoined] = useState(false);
   const [inviteOnly, setInviteOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [requested, setRequested] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
   // Load group preview
   useEffect(() => {
@@ -117,18 +119,53 @@ export default function JoinGroup() {
           {preview.description && (
             <p className="text-sm text-warm-gray-500 mb-4">{preview.description}</p>
           )}
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-6">
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-4">
             <p className="text-sm text-amber-800 font-medium">This group is invite-only</p>
             <p className="text-xs text-amber-600 mt-1">
-              Ask the group coordinator to add you by email.
+              Ask the group coordinator to send you an invite link.
             </p>
           </div>
-          <button
-            onClick={() => router.push("/")}
-            className="text-violet-600 font-medium hover:underline"
-          >
-            Go to dashboard
-          </button>
+
+          {requested ? (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-xl mb-6">
+              <p className="text-sm text-green-700 font-medium">Request sent</p>
+              <p className="text-xs text-green-600 mt-1">The coordinator will review your request.</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-warm-gray-400 mb-3">— or —</p>
+              <button
+                onClick={async () => {
+                  setRequesting(true);
+                  const res = await fetch("/api/groups/join", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code, requestAdmission: true }),
+                  });
+                  const data = await res.json();
+                  if (data.status === "pending") {
+                    setRequested(true);
+                  } else if (data.error === "Already a member") {
+                    router.push(`/groups/${data.groupId}`);
+                  }
+                  setRequesting(false);
+                }}
+                disabled={requesting}
+                className="px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50 mb-6"
+              >
+                {requesting ? "Requesting..." : "Request admission"}
+              </button>
+            </>
+          )}
+
+          <div>
+            <button
+              onClick={() => router.push("/")}
+              className="text-violet-600 font-medium hover:underline"
+            >
+              Go to dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

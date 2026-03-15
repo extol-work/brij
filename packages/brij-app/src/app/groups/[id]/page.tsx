@@ -10,6 +10,7 @@ interface Member {
   id: string;
   userId: string;
   role: string;
+  status: string;
   joinedAt: string;
   name: string | null;
   email: string;
@@ -292,9 +293,74 @@ export default function GroupDetailPage() {
             )}
             {inviteError && <p className="text-sm text-red-600 mb-4">{inviteError}</p>}
 
-            {/* Member list */}
+            {/* Pending requests (coordinator only) */}
+            {isCoordinator && group.members.filter((m) => m.status === "pending").length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2">Pending requests</p>
+                <div className="border border-amber-200 bg-amber-50 rounded-lg divide-y divide-amber-200">
+                  {group.members.filter((m) => m.status === "pending").map((m) => (
+                    <div key={m.id} className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold text-white"
+                          style={{ backgroundColor: group.color }}
+                        >
+                          {(m.name || m.email).charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-bark-900">{m.name || m.email.split("@")[0]}</p>
+                          <p className="text-[11px] text-warm-gray-400">{m.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            const res = await fetch(`/api/groups/${id}/members`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ membershipId: m.id, action: "approve" }),
+                            });
+                            if (res.ok) {
+                              setGroup({
+                                ...group,
+                                members: group.members.map((x) =>
+                                  x.id === m.id ? { ...x, status: "active" } : x
+                                ),
+                              });
+                            }
+                          }}
+                          className="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const res = await fetch(`/api/groups/${id}/members`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ membershipId: m.id, action: "ignore" }),
+                            });
+                            if (res.ok) {
+                              setGroup({
+                                ...group,
+                                members: group.members.filter((x) => x.id !== m.id),
+                              });
+                            }
+                          }}
+                          className="px-3 py-1 border border-warm-gray-200 rounded-lg text-xs text-warm-gray-500 hover:bg-warm-gray-50"
+                        >
+                          Ignore
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active member list */}
             <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200 mb-4">
-              {group.members.map((m) => (
+              {group.members.filter((m) => m.status === "active").map((m) => (
                 <div key={m.id} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2">
                     <div

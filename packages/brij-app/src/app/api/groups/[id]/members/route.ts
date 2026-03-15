@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
-  // Check not already a member
+  // Check if already a member or pending
   const existing = await db.query.groupMemberships.findFirst({
     where: and(
       eq(groupMemberships.groupId, groupId),
@@ -54,6 +54,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   });
 
   if (existing) {
+    // If pending, approve them
+    if (existing.status === "pending") {
+      const [updated] = await db
+        .update(groupMemberships)
+        .set({ status: "active" })
+        .where(eq(groupMemberships.id, existing.id))
+        .returning();
+      return NextResponse.json(updated, { status: 200 });
+    }
     return NextResponse.json({ error: "Already a member" }, { status: 409 });
   }
 
@@ -63,8 +72,66 @@ export async function POST(req: NextRequest, { params }: Params) {
       groupId,
       userId: invitee.id,
       role: "member",
+      status: "active",
     })
     .returning();
 
   return NextResponse.json(newMembership, { status: 201 });
+}
+
+/** PATCH /api/groups/:id/members — approve or ignore a pending member (coordinator only) */
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id: groupId } = await params;
+
+  // Verify coordinator
+  const membership = await db.query.groupMemberships.findFirst({
+    where: and(
+      eq(groupMemberships.groupId, groupId),
+      eq(groupMemberships.userId, user.id),
+      eq(groupMemberships.role, "coordinator")
+    ),
+  });
+
+  if (!membership) {
+    return NextResponse.json({ error: "Must be coordinator" }, { status: 403 });
+  }
+
+  const body = await req.json();
+  const { membershipId, action } = body;
+
+  if (!membershipId || !action) {
+    return NextResponse.json({ error: "membershipId and action required" }, { status: 400 });
+  }
+
+  const target = await db.query.groupMemberships.findFirst({
+    where: and(
+      eq(groupMemberships.id, membershipId),
+      eq(groupMemberships.groupId, groupId)
+    ),
+  });
+
+  if (!target) {
+    return NextResponse.json({ error: "Membership not found" }, { status: 404 });
+  }
+
+  if (action === "approve") {
+    const [updated] = await db
+      .update(groupMemberships)
+      .set({ status: "active" })
+      .where(eq(groupMemberships.id, membershipId))
+      .returning();
+    return NextResponse.json(updated);
+  }
+
+  if (action === "ignore") {
+    await db
+      .delete(groupMemberships)
+      .where(eq(groupMemberships.id, membershipId));
+    return NextResponse.json({ ok: true });
+  }
+
+  return NextResponse.json({ error: "action must be 'approve' or 'ignore'" }, { status: 400 });
 }

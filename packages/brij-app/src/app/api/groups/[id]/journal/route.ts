@@ -17,7 +17,8 @@ export async function GET(req: NextRequest, { params }: Params) {
   const membership = await db.query.groupMemberships.findFirst({
     where: and(
       eq(groupMemberships.groupId, groupId),
-      eq(groupMemberships.userId, user.id)
+      eq(groupMemberships.userId, user.id),
+      eq(groupMemberships.status, "active")
     ),
   });
 
@@ -67,7 +68,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const membership = await db.query.groupMemberships.findFirst({
     where: and(
       eq(groupMemberships.groupId, groupId),
-      eq(groupMemberships.userId, user.id)
+      eq(groupMemberships.userId, user.id),
+      eq(groupMemberships.status, "active")
     ),
   });
 

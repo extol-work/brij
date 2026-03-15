@@ -43,6 +43,11 @@ export const groupRoleEnum = pgEnum("group_role", [
   "member",
 ]);
 
+export const groupMemberStatusEnum = pgEnum("group_member_status", [
+  "active",
+  "pending",
+]);
+
 export const groupTypeEnum = pgEnum("group_type", [
   "creative",
   "sports",
@@ -134,6 +139,7 @@ export const groupMemberships = pgTable("group_memberships", {
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   role: groupRoleEnum("role").default("member").notNull(),
+  status: groupMemberStatusEnum("status").default("active").notNull(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }), // for unread dots
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
