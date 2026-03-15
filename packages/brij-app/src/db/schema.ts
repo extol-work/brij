@@ -43,6 +43,14 @@ export const groupRoleEnum = pgEnum("group_role", [
   "member",
 ]);
 
+export const groupTypeEnum = pgEnum("group_type", [
+  "creative",
+  "sports",
+  "oss",
+  "nonprofit",
+  "other",
+]);
+
 // --- Auth.js tables ---
 
 export const users = pgTable("users", {
@@ -105,8 +113,10 @@ export const groups = pgTable("groups", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  type: groupTypeEnum("type").default("other").notNull(),
   color: text("color").default("#7c3aed").notNull(), // hex for avatar
   joinCode: text("join_code").unique().notNull(),
+  membershipMode: text("membership_mode").default("invite_only").notNull(), // invite_only | open
   createdById: uuid("created_by_id")
     .references(() => users.id)
     .notNull(),

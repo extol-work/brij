@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { name, description, color } = body;
+  const { name, description, color, type, membershipMode } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -46,8 +46,10 @@ export async function POST(req: NextRequest) {
       .values({
         name: name.trim(),
         description: description?.trim() || null,
+        type: type || "other",
         color: color || "#7c3aed",
         joinCode,
+        membershipMode: membershipMode || "invite_only",
         createdById: user.id,
       })
       .returning();
