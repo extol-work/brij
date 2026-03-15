@@ -7,6 +7,7 @@ import {
   integer,
   pgEnum,
   primaryKey,
+  unique,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -35,6 +36,11 @@ export const contributionTypeEnum = pgEnum("contribution_type", [
   "supply",
   "cash",
   "other",
+]);
+
+export const groupRoleEnum = pgEnum("group_role", [
+  "coordinator",
+  "member",
 ]);
 
 // --- Auth.js tables ---
@@ -93,6 +99,51 @@ export const verificationTokens = pgTable(
   ]
 );
 
+// --- Groups ---
+
+export const groups = pgTable("groups", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").default("#7c3aed").notNull(), // hex for avatar
+  createdById: uuid("created_by_id")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// --- Group Memberships ---
+
+export const groupMemberships = pgTable("group_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  role: groupRoleEnum("role").default("member").notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }), // for unread dots
+  joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique().on(table.groupId, table.userId),
+]);
+
+// --- Journal Entries ---
+
+export const journalEntries = pgTable("journal_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  authorId: uuid("author_id")
+    .references(() => users.id)
+    .notNull(),
+  text: text("text").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }), // soft delete, no edit
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // --- Activities ---
 
 export const activities = pgTable("activities", {
@@ -102,6 +153,8 @@ export const activities = pgTable("activities", {
   coordinatorId: uuid("coordinator_id")
     .references(() => users.id)
     .notNull(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "set null" }), // nullable — personal or group activity
   status: activityStatusEnum("status").default("draft").notNull(),
   startsAt: timestamp("starts_at", { withTimezone: true }),
   endsAt: timestamp("ends_at", { withTimezone: true }),
