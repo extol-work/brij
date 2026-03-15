@@ -300,7 +300,7 @@ function JournalSection({
           className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
           style={{ backgroundColor: "#8B6548" }}
         >
-          {userId ? "Y" : "?"}
+          {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?"}
         </div>
         <input
           type="text"
