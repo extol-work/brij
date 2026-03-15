@@ -217,7 +217,7 @@ export default function GroupDetailPage() {
                   if (e.key === "Enter" && text.trim()) handlePost();
                 }}
                 placeholder="What are you working on?"
-                className="flex-1 text-sm bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
+                className="flex-1 text-base bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
               />
               <button
                 onClick={handlePost}

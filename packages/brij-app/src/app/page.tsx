@@ -313,7 +313,7 @@ function JournalSection({
             if (e.key === "Enter" && text.trim()) handlePost();
           }}
           placeholder="What are you working on?"
-          className="flex-1 text-sm bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
+          className="flex-1 text-base bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
         />
         <button
           onClick={(e) => {
@@ -349,7 +349,7 @@ function JournalSection({
       {expanded && loaded && (
         <div className="mt-3 px-1">
           {/* Today's entries */}
-          {todayEntries.slice(0, 3).map((entry) => (
+          {todayEntries.slice(0, 2).map((entry) => (
             <JournalEntryRow
               key={entry.id}
               entry={entry}
@@ -358,9 +358,9 @@ function JournalSection({
               onDelete={() => handleDelete(entry.id)}
             />
           ))}
-          {todayEntries.length > 3 && (
+          {todayEntries.length > 2 && (
             <p className="text-xs text-warm-gray-400 pl-5 py-1">
-              +{todayEntries.length - 3} more today
+              +{todayEntries.length - 2} more today
             </p>
           )}
 
