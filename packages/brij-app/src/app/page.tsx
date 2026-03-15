@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -227,6 +227,23 @@ function JournalSection({
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const journalRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to collapse
+  useEffect(() => {
+    if (!expanded) return;
+    function handleClick(e: MouseEvent) {
+      if (journalRef.current && !journalRef.current.contains(e.target as Node)) {
+        setExpanded(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
+    };
+  }, [expanded]);
 
   // Prefetch entries on mount
   useEffect(() => {
@@ -286,7 +303,7 @@ function JournalSection({
   }).length;
 
   return (
-    <div className="mb-6">
+    <div className="mb-6" ref={journalRef}>
       <div className="flex justify-between items-center mb-2 px-1">
         <h3 className="text-base font-bold text-bark-900">
           Journal <span style={{ color: group.color }}>for {group.name}</span>
@@ -383,13 +400,6 @@ function JournalSection({
             </div>
           )}
 
-          {/* Collapse button */}
-          <button
-            onClick={() => setExpanded(false)}
-            className="w-full text-xs text-warm-gray-400 py-2 hover:text-warm-gray-600"
-          >
-            Collapse journal
-          </button>
         </div>
       )}
     </div>
