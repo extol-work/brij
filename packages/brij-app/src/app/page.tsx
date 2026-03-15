@@ -212,9 +212,11 @@ function GroupSwitcher({
 function JournalSection({
   group,
   userId,
+  userInitial,
 }: {
   group: Group;
   userId: string;
+  userInitial: string;
 }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [expanded, setExpanded] = useState(false);
@@ -300,7 +302,7 @@ function JournalSection({
           className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
           style={{ backgroundColor: "#8B6548" }}
         >
-          {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?"}
+          {userInitial}
         </div>
         <input
           type="text"
@@ -700,7 +702,7 @@ export default function Dashboard() {
 
         {/* Journal Section */}
         {activeGroup && (
-          <JournalSection group={activeGroup} userId={userId} />
+          <JournalSection group={activeGroup} userId={userId} userInitial={session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?"} />
         )}
 
         {/* Activities */}
