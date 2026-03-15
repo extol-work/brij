@@ -4,6 +4,28 @@ import { db } from "@/db";
 import { groups, groupMemberships } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
+/** GET /api/groups/join?code=xxx — preview a group (no auth required for info) */
+export async function GET(req: NextRequest) {
+  const code = req.nextUrl.searchParams.get("code");
+  if (!code) return NextResponse.json({ error: "code is required" }, { status: 400 });
+
+  const group = await db.query.groups.findFirst({
+    where: eq(groups.joinCode, code.trim()),
+  });
+
+  if (!group) {
+    return NextResponse.json({ error: "Group not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    color: group.color,
+    membershipMode: group.membershipMode,
+  });
+}
+
 /** POST /api/groups/join — join a group by code */
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
@@ -34,6 +56,16 @@ export async function POST(req: NextRequest) {
 
   if (existing) {
     return NextResponse.json({ error: "Already a member", groupId: group.id }, { status: 409 });
+  }
+
+  // Invite-only groups: don't auto-join
+  if (group.membershipMode === "invite_only") {
+    return NextResponse.json({
+      error: "invite_only",
+      groupId: group.id,
+      name: group.name,
+      message: "This group is invite-only. Ask the coordinator for an invite.",
+    }, { status: 403 });
   }
 
   await db.insert(groupMemberships).values({
