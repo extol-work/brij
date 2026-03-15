@@ -24,6 +24,9 @@ yarn-debug.log*
 .env.production
 .env.*.local
 
+# npm auth
+.npmrc
+
 # vercel
 .vercel
 

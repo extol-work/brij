@@ -1,12 +1,34 @@
 {
-  "name": "@brij/core",
+  "name": "@extol-work/brij-core",
   "version": "0.1.0",
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.ts",
-    "./events": "./events.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./events": {
+      "import": "./dist/events.js",
+      "types": "./dist/events.d.ts"
+    }
   },
-  "license": "Apache-2.0"
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/extol-work/brij.git",
+    "directory": "packages/brij-core"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

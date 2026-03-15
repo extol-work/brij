@@ -13,7 +13,7 @@ importers:
       '@auth/drizzle-adapter':
         specifier: ^1.11.1
         version: 1.11.1
-      '@brij/core':
+      '@extol-work/brij-core':
         specifier: workspace:*
         version: link:../brij-core
       '@types/qrcode':
@@ -81,7 +81,11 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  packages/brij-core: {}
+  packages/brij-core:
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
 packages:
 
