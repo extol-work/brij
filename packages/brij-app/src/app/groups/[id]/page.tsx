@@ -238,11 +238,11 @@ export default function GroupDetailPage() {
               </button>
             </div>
 
-            {/* Today's entries */}
+            {/* Today's entries (max 3, then "+N more") */}
             {todayEntries.length > 0 && (
               <div className="mb-3">
                 <p className="text-[13px] font-semibold text-warm-gray-500 mb-2">Today</p>
-                {todayEntries.map((entry) => (
+                {todayEntries.slice(0, 3).map((entry) => (
                   <EntryRow
                     key={entry.id}
                     entry={entry}
@@ -251,13 +251,23 @@ export default function GroupDetailPage() {
                     onDelete={() => handleDelete(entry.id)}
                   />
                 ))}
+                {todayEntries.length > 3 && (
+                  <p className="text-xs text-warm-gray-400 pl-5 py-1">
+                    +{todayEntries.length - 3} more today
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Past days */}
+            {/* Past days (collapsed) */}
             {pastDays.map(({ label, entries: dayEntries }) => (
               <CollapsedDay key={label} label={label} entries={dayEntries} color={group.color} />
             ))}
+
+            {/* Weekly rollup */}
+            {entries.length > 0 && (
+              <WeeklyRollup entries={entries} />
+            )}
 
             {entries.length === 0 && (
               <p className="text-sm text-warm-gray-400 text-center py-8 leading-relaxed">
@@ -632,6 +642,24 @@ function EditGroupForm({
         {saved ? "Saved!" : saving ? "Saving..." : "Save changes"}
       </button>
     </form>
+  );
+}
+
+function WeeklyRollup({ entries }: { entries: JournalEntry[] }) {
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekEntries = entries.filter((e) => new Date(e.createdAt) >= weekAgo);
+  const uniqueMembers = new Set(weekEntries.map((e) => e.authorId));
+
+  if (weekEntries.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5 bg-[#FDF8F0] border border-[#E8D5BC] rounded-xl my-4">
+      <span className="text-[28px] font-bold text-[#5C3D2E] leading-none">{weekEntries.length}</span>
+      <span className="text-[13px] text-[#8B6548]">
+        contributions from <strong>{uniqueMembers.size} {uniqueMembers.size === 1 ? "member" : "members"}</strong> last week
+      </span>
+    </div>
   );
 }
 
