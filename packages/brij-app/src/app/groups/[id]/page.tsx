@@ -30,6 +30,7 @@ interface GroupDetail {
   description: string | null;
   color: string;
   joinCode: string;
+  membershipMode: string;
   members: Member[];
   entryCount: number;
   currentMembership: { role: string };
@@ -481,10 +482,11 @@ function EditGroupForm({
   onUpdated,
 }: {
   group: GroupDetail;
-  onUpdated: (g: { name: string; description: string | null; color: string }) => void;
+  onUpdated: (g: { name: string; description: string | null; color: string; membershipMode: string }) => void;
 }) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || "");
+  const [membershipMode, setMembershipMode] = useState(group.membershipMode);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -494,7 +496,7 @@ function EditGroupForm({
     const res = await fetch(`/api/groups/${group.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description: description || null }),
+      body: JSON.stringify({ name, description: description || null, membershipMode }),
     });
     if (res.ok) {
       const updated = await res.json();
@@ -514,7 +516,7 @@ function EditGroupForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
+          className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-violet-600"
         />
       </div>
       <div>
@@ -524,8 +526,32 @@ function EditGroupForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What does this group do?"
-          className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
+          className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-violet-600"
         />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-bark-900 mb-2">Join status</label>
+        <div className="flex gap-2">
+          {(["invite_only", "open"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setMembershipMode(mode)}
+              className={`flex-1 py-3 border-2 rounded-xl text-center transition-all ${
+                membershipMode === mode
+                  ? "border-violet-600 bg-violet-50"
+                  : "border-[#e8e0d4]"
+              }`}
+            >
+              <div className="text-sm font-semibold">
+                {mode === "invite_only" ? "Invite only" : "Open"}
+              </div>
+              <div className="text-xs text-[#999] mt-0.5">
+                {mode === "invite_only" ? "You add members" : "Anyone with the link"}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
       <button
         type="submit"

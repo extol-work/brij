@@ -110,6 +110,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.color !== undefined) {
     updates.color = body.color;
   }
+  if (body.membershipMode !== undefined) {
+    updates.membershipMode = body.membershipMode;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
