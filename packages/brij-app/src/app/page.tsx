@@ -232,7 +232,7 @@ function JournalSection({
   // Click outside to collapse
   useEffect(() => {
     if (!expanded) return;
-    function handleClick(e: MouseEvent) {
+    function handleClick(e: MouseEvent | TouchEvent) {
       if (journalRef.current && !journalRef.current.contains(e.target as Node)) {
         setExpanded(false);
       }
