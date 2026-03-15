@@ -196,13 +196,17 @@ function GroupSwitcher({
             </span>
           </button>
         ))}
+
+        {/* + circle */}
+        <Link
+          href={groups.length > 0 ? "/groups" : "/groups/new"}
+          className="flex flex-col items-center gap-1 shrink-0"
+        >
+          <div className="w-[52px] h-[52px] rounded-full bg-warm-gray-200 flex items-center justify-center hover:bg-warm-gray-300 transition-colors">
+            <span className="text-2xl leading-none text-white font-light">+</span>
+          </div>
+        </Link>
       </div>
-      <Link
-        href="/groups"
-        className="shrink-0 pr-1 text-lg text-violet-600 font-semibold whitespace-nowrap"
-      >
-        My groups &rsaquo;
-      </Link>
     </div>
   );
 }
