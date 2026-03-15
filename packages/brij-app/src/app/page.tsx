@@ -202,7 +202,7 @@ function GroupSwitcher({
           href={groups.length > 0 ? "/groups" : "/groups/new"}
           className="flex flex-col items-center gap-1 shrink-0"
         >
-          <div className="w-[52px] h-[52px] rounded-full bg-warm-gray-300 flex items-center justify-center hover:bg-warm-gray-400 transition-colors">
+          <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: "#c4b8a8" }}>
             <span className="text-2xl leading-none text-white font-bold">+</span>
           </div>
         </Link>
