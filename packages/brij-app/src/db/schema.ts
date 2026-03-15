@@ -139,6 +139,8 @@ export const journalEntries = pgTable("journal_entries", {
   authorId: uuid("author_id")
     .references(() => users.id)
     .notNull(),
+  activityId: uuid("activity_id")
+    .references(() => activities.id, { onDelete: "cascade" }), // null = group-level, set = activity-scoped
   text: text("text").notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }), // soft delete, no edit
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
