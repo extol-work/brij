@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import QRCode from "react-qr-code";
 
@@ -38,6 +38,7 @@ interface GroupDetail {
 export default function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -310,6 +311,11 @@ export default function GroupDetailPage() {
               ))}
             </div>
 
+            {/* Leave group (non-coordinators) */}
+            {!isCoordinator && (
+              <LeaveGroupButton groupId={group.id} onLeft={() => router.push("/")} />
+            )}
+
             {/* Share invite link */}
             <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
               <p className="text-xs text-violet-600 font-semibold mb-2">Invite link</p>
@@ -424,6 +430,48 @@ function CollapsedDay({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function LeaveGroupButton({ groupId, onLeft }: { groupId: string; onLeft: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  if (!confirming) {
+    return (
+      <button
+        onClick={() => setConfirming(true)}
+        className="w-full mt-4 mb-4 py-2.5 text-sm text-red-500 hover:text-red-700 transition-colors"
+      >
+        Leave group
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-4 mb-4 p-3 border border-red-200 bg-red-50 rounded-lg">
+      <p className="text-sm text-red-700 mb-2">Are you sure? You&apos;ll need a new invite to rejoin.</p>
+      <div className="flex gap-2">
+        <button
+          onClick={async () => {
+            setLeaving(true);
+            const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" });
+            if (res.ok) onLeft();
+            setLeaving(false);
+          }}
+          disabled={leaving}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+        >
+          {leaving ? "Leaving..." : "Yes, leave"}
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="px-4 py-2 text-sm text-warm-gray-500"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

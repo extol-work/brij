@@ -199,7 +199,7 @@ function GroupSwitcher({
       </div>
       <Link
         href="/groups"
-        className="shrink-0 pr-1 text-xs text-violet-600 font-semibold whitespace-nowrap"
+        className="shrink-0 pr-1 text-lg text-violet-600 font-semibold whitespace-nowrap"
       >
         My groups &rsaquo;
       </Link>

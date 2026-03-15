@@ -123,3 +123,37 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   return NextResponse.json(updated);
 }
+
+/** DELETE /api/groups/:id — leave the group (non-coordinators only) */
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+
+  const membership = await db.query.groupMemberships.findFirst({
+    where: and(
+      eq(groupMemberships.groupId, id),
+      eq(groupMemberships.userId, user.id)
+    ),
+  });
+
+  if (!membership) {
+    return NextResponse.json({ error: "Not a member" }, { status: 404 });
+  }
+
+  if (membership.role === "coordinator") {
+    return NextResponse.json({ error: "Coordinators cannot leave yet — transfer ownership first" }, { status: 400 });
+  }
+
+  await db
+    .delete(groupMemberships)
+    .where(
+      and(
+        eq(groupMemberships.groupId, id),
+        eq(groupMemberships.userId, user.id)
+      )
+    );
+
+  return NextResponse.json({ ok: true });
+}
