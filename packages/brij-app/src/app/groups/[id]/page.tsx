@@ -436,7 +436,10 @@ export default function GroupDetailPage() {
         )}
 
         {tab === "settings" && isCoordinator && (
-          <EditGroupForm group={group} onUpdated={(g) => setGroup({ ...group, ...g })} />
+          <div className="space-y-8">
+            <EditGroupForm group={group} onUpdated={(g) => setGroup({ ...group, ...g })} />
+            <GroupExport groupId={group.id} groupName={group.name} />
+          </div>
         )}
       </div>
     </div>
@@ -654,6 +657,86 @@ function EditGroupForm({
         {saved ? "Saved!" : saving ? "Saving..." : "Save changes"}
       </button>
     </form>
+  );
+}
+
+function GroupExport({ groupId, groupName }: { groupId: string; groupName: string }) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [exportingJournal, setExportingJournal] = useState(false);
+  const [exportingMembers, setExportingMembers] = useState(false);
+
+  async function download(type: "journal" | "members") {
+    const setter = type === "journal" ? setExportingJournal : setExportingMembers;
+    setter(true);
+    const params = new URLSearchParams({ type });
+    if (type === "journal") {
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+    }
+    const res = await fetch(`/api/groups/${groupId}/export?${params.toString()}`);
+    if (res.ok) {
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${groupName.replace(/[^a-zA-Z0-9]/g, "-")}-${type}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    setter(false);
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Export</h3>
+
+      {/* Journal export */}
+      <div className="bg-white border border-warm-gray-200 rounded-xl p-4 mb-3">
+        <p className="text-sm text-bark-900 font-medium mb-1">Export journal</p>
+        <p className="text-xs text-warm-gray-400 mb-3">Download all journal entries as CSV.</p>
+        <div className="flex gap-2 mb-3">
+          <div className="flex-1">
+            <label className="block text-xs text-warm-gray-400 mb-1">From</label>
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-base"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-warm-gray-400 mb-1">To</label>
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-base"
+            />
+          </div>
+        </div>
+        <button
+          onClick={() => download("journal")}
+          disabled={exportingJournal}
+          className="w-full py-2.5 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+        >
+          {exportingJournal ? "Exporting..." : "Download journal CSV"}
+        </button>
+        <p className="text-xs text-warm-gray-400 mt-2 text-center">Leave dates blank for all entries</p>
+      </div>
+
+      {/* Members export */}
+      <div className="bg-white border border-warm-gray-200 rounded-xl p-4">
+        <p className="text-sm text-bark-900 font-medium mb-1">Export members</p>
+        <p className="text-xs text-warm-gray-400 mb-3">Download member list with activity and journal counts.</p>
+        <button
+          onClick={() => download("members")}
+          disabled={exportingMembers}
+          className="w-full py-2.5 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+        >
+          {exportingMembers ? "Exporting..." : "Download members CSV"}
+        </button>
+      </div>
+    </div>
   );
 }
 

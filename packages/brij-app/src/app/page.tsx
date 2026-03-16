@@ -35,6 +35,13 @@ interface JournalEntry {
   authorEmail: string;
 }
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  if (local.length <= 2) return `${local}***@${domain}`;
+  return `${local[0]}***@${domain}`;
+}
+
 function formatTime(startsAt: string | null) {
   if (!startsAt) return null;
   const d = new Date(startsAt);
@@ -673,15 +680,9 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-baseline gap-1.5"><span className="text-2xl font-bold text-bark-900">brij</span><span className="text-base text-warm-gray-400 font-light">by Extol</span></div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-warm-gray-500">
-              {session?.user?.email || "Signed in"}
-            </span>
-            <button
-              onClick={() => signOut()}
-              className="text-sm text-warm-gray-400 hover:text-bark-900"
-            >
-              Sign out
-            </button>
+            <Link href="/settings" className="text-sm text-warm-gray-500 hover:text-bark-900 transition-colors">
+              {maskEmail(session?.user?.email || "Signed in")}
+            </Link>
           </div>
         </div>
       </header>
