@@ -6,7 +6,7 @@
 
 import posthog from "posthog-js";
 
-const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || "phc_80Rk0mhFCUur5J50My0izloLTArbwu9UpkcW1GodUrR";
 
 let initialized = false;
 
