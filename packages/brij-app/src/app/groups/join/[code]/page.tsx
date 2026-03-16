@@ -3,6 +3,7 @@
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { track } from "@/lib/posthog";
 
 interface GroupPreview {
   id: string;
@@ -56,6 +57,7 @@ export default function JoinGroup() {
     const data = await res.json();
     if (res.ok) {
       setJoined(true);
+      track("group_joined", { method: "direct_link" });
       setTimeout(() => router.push(`/groups/${data.groupId}`), 1500);
     } else if (data.error === "Already a member") {
       router.push(`/groups/${data.groupId}`);

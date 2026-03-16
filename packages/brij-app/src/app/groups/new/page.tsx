@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/posthog";
 
 const GROUP_TYPES = [
   { id: "creative", icon: "🎸", name: "Band / Creative", desc: "Music, art, makers", color: "#7c3aed" },
@@ -72,6 +73,7 @@ export default function NewGroupOnboarding() {
 
     const group = await res.json();
     setCreatedGroup(group);
+    track("group_created", { name_length: name.length });
 
     // Invite members (best-effort, don't block)
     const errors: string[] = [];

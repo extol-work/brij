@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
+import { resetUser } from "@/lib/posthog";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -159,7 +160,7 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Account</h2>
           <div className="space-y-3">
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => { resetUser(); signOut({ callbackUrl: "/" }); }}
               className="w-full py-2.5 border border-warm-gray-200 rounded-xl text-sm text-warm-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
             >
               Sign out

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { track } from "@/lib/posthog";
 
 function ConsentForm() {
   const router = useRouter();
@@ -17,6 +18,7 @@ function ConsentForm() {
     setSubmitting(true);
     const res = await fetch("/api/consent", { method: "POST" });
     if (res.ok) {
+      track("consent_given", { method: "first_checkin" });
       router.push(callbackUrl);
     }
     setSubmitting(false);

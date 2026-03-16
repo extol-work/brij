@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { identifyUser, track } from "@/lib/posthog";
 
 interface Activity {
   id: string;
@@ -285,6 +286,7 @@ function JournalSection({
     if (res.ok) {
       const entry = await res.json();
       setEntries((prev) => [entry, ...prev]);
+      track("journal_post", { group_id: group.id, word_count: text.trim().split(/\s+/).length });
       setText("");
       setExpanded(false);
     }
@@ -570,6 +572,7 @@ export default function Dashboard() {
           return;
         }
         setUserId(me.id);
+        identifyUser({ id: me.id, email: me.email, name: me.displayName });
         return Promise.all([
           fetch("/api/activities").then((r) => r.json()),
           fetch("/api/groups").then((r) => r.json()),
@@ -706,6 +709,7 @@ export default function Dashboard() {
             });
             if (res.ok) {
               const activity = await res.json();
+              track("activity_created", { type: "now", recurring: false, group_id: null });
               router.push(`/activity/${activity.id}`);
             }
             setStartingNow(false);
