@@ -75,6 +75,45 @@ export async function DELETE() {
     }
   }
 
+  // Notify cortex middleware before cascade delete (GDPR PDA cleanup)
+  // Cortex can't detect deletions by polling — we must push.
+  const cortexUrl = process.env.CORTEX_URL;
+  if (cortexUrl) {
+    for (const { groupId } of coordinated) {
+      try {
+        await fetch(`${cortexUrl}/user-deleted`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ communityId: groupId, userId }),
+        });
+      } catch {
+        // Best-effort — don't block account deletion if cortex is down
+      }
+    }
+    // Also notify for groups where user is just a member
+    const memberOf = await db
+      .select({ groupId: groupMemberships.groupId })
+      .from(groupMemberships)
+      .where(
+        and(
+          eq(groupMemberships.userId, userId),
+          eq(groupMemberships.role, "member"),
+          eq(groupMemberships.status, "active")
+        )
+      );
+    for (const { groupId } of memberOf) {
+      try {
+        await fetch(`${cortexUrl}/user-deleted`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ communityId: groupId, userId }),
+        });
+      } catch {
+        // Best-effort
+      }
+    }
+  }
+
   // Perform deletion in order (respecting FK constraints)
   // 1. Peer attestations (where user is attester or attestee)
   await db.delete(peerAttestations).where(eq(peerAttestations.attesterId, userId));
