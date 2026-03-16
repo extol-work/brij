@@ -13,6 +13,10 @@ export default function SettingsPage() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -153,12 +157,67 @@ export default function SettingsPage() {
         {/* Account */}
         <div>
           <h2 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Account</h2>
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full py-2.5 border border-warm-gray-200 rounded-xl text-sm text-warm-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
-          >
-            Sign out
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-full py-2.5 border border-warm-gray-200 rounded-xl text-sm text-warm-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
+            >
+              Sign out
+            </button>
+
+            {!showDelete ? (
+              <button
+                onClick={() => setShowDelete(true)}
+                className="w-full py-2.5 text-sm text-warm-gray-400 hover:text-red-500 transition-colors"
+              >
+                Delete my history
+              </button>
+            ) : (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-red-800 mb-2">Delete all your data?</p>
+                <p className="text-xs text-red-600 mb-3 leading-relaxed">
+                  This will permanently delete your activities, check-ins, journal entries, group memberships, and account. This cannot be undone.
+                </p>
+                <p className="text-xs text-red-600 mb-3">
+                  Type <strong>delete my history</strong> to confirm:
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder="delete my history"
+                  className="w-full px-3 py-2 border border-red-200 rounded-lg text-base text-bark-900 mb-3 focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
+                {deleteError && <p className="text-xs text-red-700 mb-3">{deleteError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      setDeleting(true);
+                      setDeleteError("");
+                      const res = await fetch("/api/account", { method: "DELETE" });
+                      if (res.ok) {
+                        signOut({ callbackUrl: "/" });
+                      } else {
+                        const data = await res.json();
+                        setDeleteError(data.error || "Failed to delete");
+                        setDeleting(false);
+                      }
+                    }}
+                    disabled={deleting || deleteConfirm !== "delete my history"}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting..." : "Delete everything"}
+                  </button>
+                  <button
+                    onClick={() => { setShowDelete(false); setDeleteConfirm(""); setDeleteError(""); }}
+                    className="px-4 py-2 text-sm text-warm-gray-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
