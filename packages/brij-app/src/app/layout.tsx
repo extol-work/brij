@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Brij",
+  title: "brij",
   description: "Free activity tracker for communities",
 };
 
