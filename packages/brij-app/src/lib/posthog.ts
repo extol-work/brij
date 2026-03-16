@@ -13,6 +13,7 @@ let initialized = false;
 export function initPostHog() {
   if (initialized || !POSTHOG_KEY || typeof window === "undefined") return;
 
+  console.log("[posthog] initializing with key:", POSTHOG_KEY.slice(0, 10) + "...");
   posthog.init(POSTHOG_KEY, {
     api_host: "https://us.i.posthog.com",
     capture_pageview: true,
