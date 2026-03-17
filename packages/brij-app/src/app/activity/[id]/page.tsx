@@ -423,10 +423,10 @@ export default function ActivityDetail() {
 
       <main className="max-w-2xl mx-auto px-6 py-8">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push(activity.groupId ? `/groups/${activity.groupId}` : "/")}
           className="text-sm text-warm-gray-500 hover:text-bark-900 mb-6"
         >
-          &larr; Dashboard
+          &larr; {activity.groupId && activity.groupName ? activity.groupName : "Dashboard"}
         </button>
 
         {editing ? (

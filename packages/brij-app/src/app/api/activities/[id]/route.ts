@@ -99,6 +99,7 @@ export async function PATCH(
         title: existing.title,
         description: existing.description,
         coordinatorId: existing.coordinatorId,
+        groupId: existing.groupId,
         status: "open",
         startsAt: nextDate,
         endsAt: null,
