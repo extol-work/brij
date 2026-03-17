@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { track } from "@/lib/posthog";
 
 interface Activity {
   id: string;
@@ -18,8 +19,14 @@ export default function CardViewer() {
   const [activity, setActivity] = useState<Activity | null>(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+
+  useEffect(() => {
+    track("card_viewed", { referrer: document.referrer || "direct" });
     fetch(`/api/activities/${activityId}`)
       .then((r) => r.json())
       .then(setActivity);
@@ -116,9 +123,9 @@ export default function CardViewer() {
       {/* Share sheet */}
       <div className="bg-white rounded-t-2xl px-6 pt-4 pb-8">
         <div className="w-9 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
-        <div className="flex justify-center gap-8">
+        <div className="flex justify-center gap-6 flex-wrap">
           <button
-            onClick={handleShare}
+            onClick={() => { track("card_shared", { method: "share" }); handleShare(); }}
             className="flex flex-col items-center gap-1.5"
           >
             <div className="w-14 h-14 rounded-2xl bg-violet-600 text-white flex items-center justify-center text-2xl">
@@ -127,7 +134,7 @@ export default function CardViewer() {
             <span className="text-xs font-medium text-gray-500">Share</span>
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => { track("card_shared", { method: "save" }); handleSave(); }}
             disabled={saving}
             className="flex flex-col items-center gap-1.5"
           >
@@ -138,8 +145,51 @@ export default function CardViewer() {
               {saving ? "Saving..." : "Save"}
             </span>
           </button>
+          {/* Instagram Stories — mobile only */}
+          {isMobile && (
+            <button
+              onClick={async () => {
+                track("card_shared", { method: "instagram_stories" });
+                try {
+                  const res = await fetch(cardUrl);
+                  const blob = await res.blob();
+                  const file = new File([blob], "extol-card.png", { type: "image/png" });
+                  // Try native share targeting Instagram
+                  if (navigator.share) {
+                    await navigator.share({
+                      files: [file],
+                    });
+                  }
+                } catch {
+                  // Fallback: open Instagram
+                  window.open("instagram://story-camera", "_blank");
+                }
+              }}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-xl" style={{ background: "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)" }}>
+                IG
+              </div>
+              <span className="text-xs font-medium text-gray-500">Stories</span>
+            </button>
+          )}
+          {/* Tweet */}
           <button
-            onClick={handleCopyLink}
+            onClick={() => {
+              track("card_shared", { method: "twitter" });
+              const text = encodeURIComponent(activity ? `${activity.title} — we showed up` : "We showed up");
+              const url = encodeURIComponent(shareUrl);
+              window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
+            }}
+            className="flex flex-col items-center gap-1.5"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-black text-white flex items-center justify-center text-lg font-bold">
+              𝕏
+            </div>
+            <span className="text-xs font-medium text-gray-500">Tweet</span>
+          </button>
+          <button
+            onClick={() => { track("card_shared", { method: "copy_link" }); handleCopyLink(); }}
             className="flex flex-col items-center gap-1.5"
           >
             <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 text-gray-900 flex items-center justify-center text-xl">
