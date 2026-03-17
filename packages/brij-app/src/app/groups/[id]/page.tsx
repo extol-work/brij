@@ -25,6 +25,28 @@ interface JournalEntry {
   authorEmail: string;
 }
 
+interface GroupActivity {
+  id: string;
+  title: string;
+  status: string;
+  startsAt: string | null;
+  location: string | null;
+  closedAt: string | null;
+  attendeeCount: number;
+}
+
+interface ExpenseEntry {
+  id: string;
+  description: string;
+  amount: string;
+  currency: string;
+  date: string;
+  authorId: string;
+  authorName: string | null;
+  authorEmail: string;
+  confirmations: Array<{ id: string; confirmedById: string; confirmedByName: string | null }>;
+}
+
 interface GroupDetail {
   id: string;
   name: string;
@@ -44,7 +66,7 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"journal" | "members" | "settings">("journal");
+  const [tab, setTab] = useState<"events" | "journal" | "expenses" | "members" | "settings">("events");
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [text, setText] = useState("");
@@ -53,16 +75,22 @@ export default function GroupDetailPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [todayExpanded, setTodayExpanded] = useState(false);
+  const [groupActivities, setGroupActivities] = useState<GroupActivity[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
     Promise.all([
       fetch(`/api/groups/${id}`).then((r) => r.json()),
       fetch(`/api/groups/${id}/journal`).then((r) => r.json()),
+      fetch(`/api/groups/${id}/activities`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/groups/${id}/expenses`).then((r) => r.json()).catch(() => []),
     ])
-      .then(([g, j]) => {
+      .then(([g, j, a, e]) => {
         if (g.id) setGroup(g);
         if (Array.isArray(j)) setEntries(j);
+        if (Array.isArray(a)) setGroupActivities(a);
+        if (Array.isArray(e)) setExpenses(e);
       })
       .finally(() => setLoading(false));
   }, [id, status]);
@@ -199,7 +227,7 @@ export default function GroupDetailPage() {
       {/* Tabs */}
       <div className="max-w-lg mx-auto px-4">
         <div className="flex gap-1 border-b border-warm-gray-200 mb-4">
-          {(["journal", "members", ...(isCoordinator ? ["settings" as const] : [])] as const).map((t) => (
+          {(["events", "journal", "expenses", "members", ...(isCoordinator ? ["settings" as const] : [])] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -213,6 +241,10 @@ export default function GroupDetailPage() {
             </button>
           ))}
         </div>
+
+        {tab === "events" && (
+          <EventsTab activities={groupActivities} groupId={group.id} isCoordinator={isCoordinator} />
+        )}
 
         {tab === "journal" && (
           <div>
@@ -289,6 +321,25 @@ export default function GroupDetailPage() {
               </p>
             )}
           </div>
+        )}
+
+        {tab === "expenses" && (
+          <ExpensesTab
+            expenses={expenses}
+            groupId={group.id}
+            isCoordinator={isCoordinator}
+            userId={session?.user?.id || ""}
+            onExpenseAdded={(e) => setExpenses((prev) => [e, ...prev])}
+            onConfirmed={(entryId, confirmation) =>
+              setExpenses((prev) =>
+                prev.map((e) =>
+                  e.id === entryId
+                    ? { ...e, confirmations: [...e.confirmations, confirmation] }
+                    : e
+                )
+              )
+            }
+          />
         )}
 
         {tab === "members" && (
@@ -396,11 +447,32 @@ export default function GroupDetailPage() {
                       <p className="text-[11px] text-warm-gray-400">{m.email}</p>
                     </div>
                   </div>
-                  {m.role === "coordinator" && (
+                  {m.role === "coordinator" ? (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
                       Coordinator
                     </span>
-                  )}
+                  ) : isCoordinator ? (
+                    <button
+                      onClick={async () => {
+                        const res = await fetch(`/api/groups/${id}/members`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ membershipId: m.id, action: "promote" }),
+                        });
+                        if (res.ok) {
+                          setGroup({
+                            ...group,
+                            members: group.members.map((x) =>
+                              x.id === m.id ? { ...x, role: "coordinator" } : x
+                            ),
+                          });
+                        }
+                      }}
+                      className="text-xs px-2 py-0.5 rounded-full border border-warm-gray-200 text-warm-gray-400 hover:border-violet-400 hover:text-violet-600 transition-colors"
+                    >
+                      Promote
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -526,6 +598,229 @@ function CollapsedDay({
             <EntryRow key={entry.id} entry={entry} color={color} canDelete={false} onDelete={() => {}} />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupActivity[]; groupId: string; isCoordinator: boolean }) {
+  const upcoming = activities.filter((a) => a.status === "open" || a.status === "draft");
+  const past = activities.filter((a) => a.status === "closed");
+
+  return (
+    <div>
+      {upcoming.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-warm-gray-500 uppercase tracking-wide mb-2">Upcoming</p>
+          <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
+            {upcoming.map((a) => (
+              <a key={a.id} href={`/activity/${a.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-cream/50 transition-colors">
+                <div>
+                  <p className="text-sm font-medium text-bark-900">{a.title}</p>
+                  <p className="text-xs text-warm-gray-400">
+                    {a.startsAt ? new Date(a.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date"}
+                    {a.location && ` · ${a.location}`}
+                  </p>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">{a.status}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-warm-gray-500 uppercase tracking-wide mb-2">Past</p>
+          <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
+            {past.map((a) => (
+              <a key={a.id} href={`/activity/${a.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-cream/50 transition-colors">
+                <div>
+                  <p className="text-sm font-medium text-bark-900">{a.title}</p>
+                  <p className="text-xs text-warm-gray-400">
+                    {a.startsAt ? new Date(a.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}
+                    {a.location && ` · ${a.location}`}
+                    {a.attendeeCount > 0 && ` · ${a.attendeeCount} attended`}
+                  </p>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-warm-gray-100 text-warm-gray-500">Done</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activities.length === 0 && (
+        <p className="text-sm text-warm-gray-400 text-center py-8">No activities for this group yet.</p>
+      )}
+    </div>
+  );
+}
+
+function ExpensesTab({
+  expenses,
+  groupId,
+  isCoordinator,
+  userId,
+  onExpenseAdded,
+  onConfirmed,
+}: {
+  expenses: ExpenseEntry[];
+  groupId: string;
+  isCoordinator: boolean;
+  userId: string;
+  onExpenseAdded: (e: ExpenseEntry) => void;
+  onConfirmed: (entryId: string, confirmation: { id: string; confirmedById: string; confirmedByName: string | null }) => void;
+}) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    const res = await fetch(`/api/groups/${groupId}/expenses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, amount, date }),
+    });
+    if (res.ok) {
+      const entry = await res.json();
+      onExpenseAdded(entry);
+      setDescription("");
+      setAmount("");
+      setShowAdd(false);
+    }
+    setSubmitting(false);
+  }
+
+  async function handleConfirm(entryId: string) {
+    const res = await fetch(`/api/groups/${groupId}/expenses`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryId }),
+    });
+    if (res.ok) {
+      const confirmation = await res.json();
+      onConfirmed(entryId, confirmation);
+    }
+  }
+
+  const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+  return (
+    <div>
+      {/* Header with total */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-xs text-warm-gray-400 uppercase tracking-wide">Total recorded</p>
+          <p className="text-xl font-bold text-bark-900">${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        </div>
+        {isCoordinator && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="text-sm text-violet-600 font-semibold hover:underline"
+          >
+            + Add expense
+          </button>
+        )}
+      </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <form onSubmit={handleAdd} className="p-4 border border-warm-gray-200 rounded-lg bg-cream/30 mb-4">
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              placeholder="What was the expense?"
+              className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-violet-600"
+            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                placeholder="Amount"
+                className="w-32 px-3 py-2 border border-warm-gray-200 rounded-lg text-base"
+              />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-base"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                {submitting ? "Adding..." : "Add"}
+              </button>
+              <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-warm-gray-400">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* Expense list */}
+      {expenses.length > 0 ? (
+        <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
+          {expenses.map((e) => {
+            const authorName = e.authorName || e.authorEmail.split("@")[0];
+            const alreadyConfirmed = e.confirmations.some((c) => c.confirmedById === userId);
+            const isAuthor = e.authorId === userId;
+
+            return (
+              <div key={e.id} className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-bark-900">{e.description}</p>
+                    <p className="text-xs text-warm-gray-400">
+                      {authorName} · {e.date}
+                    </p>
+                  </div>
+                  <p className="text-sm font-mono text-bark-900 font-semibold">
+                    ${parseFloat(e.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  {e.confirmations.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      {e.confirmations.map((c) => (
+                        <span key={c.id} className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                          {c.confirmedByName || "Confirmed"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {isCoordinator && !isAuthor && !alreadyConfirmed && (
+                    <button
+                      onClick={() => handleConfirm(e.id)}
+                      className="text-xs px-2 py-0.5 rounded-full border border-green-300 text-green-600 hover:bg-green-50 transition-colors"
+                    >
+                      Confirm
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-sm text-warm-gray-400 text-center py-8">No expenses recorded yet.</p>
       )}
     </div>
   );

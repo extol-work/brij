@@ -133,5 +133,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true });
   }
 
-  return NextResponse.json({ error: "action must be 'approve' or 'ignore'" }, { status: 400 });
+  if (action === "promote") {
+    if (target.role === "coordinator") {
+      return NextResponse.json({ error: "Already a coordinator" }, { status: 400 });
+    }
+    const [updated] = await db
+      .update(groupMemberships)
+      .set({ role: "coordinator" })
+      .where(eq(groupMemberships.id, membershipId))
+      .returning();
+    return NextResponse.json(updated);
+  }
+
+  return NextResponse.json({ error: "action must be 'approve', 'ignore', or 'promote'" }, { status: 400 });
 }

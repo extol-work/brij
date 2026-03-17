@@ -5,6 +5,7 @@ import {
   timestamp,
   boolean,
   integer,
+  decimal,
   pgEnum,
   primaryKey,
   unique,
@@ -238,3 +239,35 @@ export const peerAttestations = pgTable("peer_attestations", {
   note: text("note"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// --- Expense Entries (financial log) ---
+
+export const expenseEntries = pgTable("expense_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  authorId: uuid("author_id")
+    .references(() => users.id)
+    .notNull(),
+  description: text("description").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").default("USD").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// --- Expense Confirmations (peer verification) ---
+
+export const expenseConfirmations = pgTable("expense_confirmations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  entryId: uuid("entry_id")
+    .references(() => expenseEntries.id, { onDelete: "cascade" })
+    .notNull(),
+  confirmedById: uuid("confirmed_by_id")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique().on(table.entryId, table.confirmedById),
+]);

@@ -640,7 +640,7 @@ export default function ActivityDetail() {
         )}
 
         {/* Live mode: QR + share link always visible */}
-        {live && isCoordinator && (
+        {live && (
           <div className="mb-6">
             <div className="live-header flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -680,7 +680,7 @@ export default function ActivityDetail() {
         )}
 
         {/* Non-live QR toggle */}
-        {!live && isCoordinator && activity.status === "open" && (
+        {!live && activity.status === "open" && (
           <div className="mb-6">
             <button
               onClick={() => setShowQR(!showQR)}
