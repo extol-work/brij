@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { db } from "@/db";
-import { groupMemberships, users } from "@/db/schema";
+import { groupMemberships, groups, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 type Params = { params: Promise<{ id: string }> };
@@ -145,5 +145,27 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json(updated);
   }
 
-  return NextResponse.json({ error: "action must be 'approve', 'ignore', or 'promote'" }, { status: 400 });
+  if (action === "demote") {
+    if (target.role !== "coordinator") {
+      return NextResponse.json({ error: "Not a coordinator" }, { status: 400 });
+    }
+
+    // Check if this is the group creator — only they can demote themselves
+    const group = await db.query.groups.findFirst({
+      where: eq(groups.id, groupId),
+    });
+
+    if (group && target.userId === group.createdById && user.id !== group.createdById) {
+      return NextResponse.json({ error: "Only the original creator can demote themselves" }, { status: 403 });
+    }
+
+    const [updated] = await db
+      .update(groupMemberships)
+      .set({ role: "member" })
+      .where(eq(groupMemberships.id, membershipId))
+      .returning();
+    return NextResponse.json(updated);
+  }
+
+  return NextResponse.json({ error: "action must be 'approve', 'ignore', 'promote', or 'demote'" }, { status: 400 });
 }

@@ -54,6 +54,7 @@ interface GroupDetail {
   color: string;
   joinCode: string;
   membershipMode: string;
+  createdById: string;
   members: Member[];
   entryCount: number;
   currentMembership: { role: string };
@@ -448,9 +449,34 @@ export default function GroupDetailPage() {
                     </div>
                   </div>
                   {m.role === "coordinator" ? (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                      Coordinator
-                    </span>
+                    isCoordinator && (m.userId === session?.user?.id || m.userId !== group.createdById) ? (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(m.userId === session?.user?.id ? "Demote yourself?" : "Demote this coordinator?")) return;
+                          const res = await fetch(`/api/groups/${id}/members`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ membershipId: m.id, action: "demote" }),
+                          });
+                          if (res.ok) {
+                            setGroup({
+                              ...group,
+                              members: group.members.map((x) =>
+                                x.id === m.id ? { ...x, role: "member" } : x
+                              ),
+                            });
+                          }
+                        }}
+                        className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 hover:bg-red-100 hover:text-red-600 transition-colors cursor-pointer"
+                        title="Click to demote"
+                      >
+                        Coordinator
+                      </button>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                        Coordinator
+                      </span>
+                    )
                   ) : isCoordinator ? (
                     <button
                       onClick={async () => {
@@ -609,6 +635,16 @@ function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupAc
 
   return (
     <div>
+      {isCoordinator && (
+        <div className="flex justify-end mb-4">
+          <a
+            href="/new"
+            className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 transition-colors"
+          >
+            + Create event
+          </a>
+        </div>
+      )}
       {upcoming.length > 0 && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-warm-gray-500 uppercase tracking-wide mb-2">Upcoming</p>
