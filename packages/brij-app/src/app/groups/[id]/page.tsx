@@ -77,6 +77,7 @@ export default function GroupDetailPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [todayExpanded, setTodayExpanded] = useState(false);
+  const [cachedGeo, setCachedGeo] = useState<{ latitude: number; longitude: number } | null>(null);
   const [groupActivities, setGroupActivities] = useState<GroupActivity[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
 
@@ -113,14 +114,19 @@ export default function GroupDetailPage() {
 
   const isCoordinator = group.currentMembership?.role === "coordinator";
 
+  function requestGeo() {
+    if (!cachedGeo) {
+      getLocation().then((geo) => { if (geo) setCachedGeo(geo); });
+    }
+  }
+
   async function handlePost() {
     if (!text.trim()) return;
     setPosting(true);
-    const geo = await getLocation();
     const res = await fetch(`/api/groups/${id}/journal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, ...geo }),
+      body: JSON.stringify({ text, ...cachedGeo }),
     });
     if (res.ok) {
       const entry = await res.json();
@@ -257,6 +263,7 @@ export default function GroupDetailPage() {
                 type="text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onFocus={requestGeo}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && text.trim()) handlePost();
                 }}

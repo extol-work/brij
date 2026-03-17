@@ -236,6 +236,7 @@ function JournalSection({
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [cachedGeo, setCachedGeo] = useState<{ latitude: number; longitude: number } | null>(null);
   const journalRef = useRef<HTMLDivElement>(null);
 
   // Click outside to collapse
@@ -276,14 +277,19 @@ function JournalSection({
     return d.toDateString() !== now.toDateString();
   }));
 
+  function requestGeo() {
+    if (!cachedGeo) {
+      getLocation().then((geo) => { if (geo) setCachedGeo(geo); });
+    }
+  }
+
   async function handlePost() {
     if (!text.trim()) return;
     setPosting(true);
-    const geo = await getLocation();
     const res = await fetch(`/api/groups/${group.id}/journal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, ...geo }),
+      body: JSON.stringify({ text, ...cachedGeo }),
     });
     if (res.ok) {
       const entry = await res.json();
@@ -340,7 +346,7 @@ function JournalSection({
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onFocus={() => setExpanded(true)}
+          onFocus={() => { setExpanded(true); requestGeo(); }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && text.trim()) handlePost();
           }}
