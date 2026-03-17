@@ -6,6 +6,7 @@ import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { firstName, initial } from "@/lib/names";
 import { saveCheckinOffline, syncPendingCheckins } from "@/lib/offline-checkin";
+import { getLocation } from "@/lib/geolocation";
 
 interface Attendee {
   name: string;
@@ -134,9 +135,11 @@ function JoinActivityInner() {
     }
 
     const live = activity ? isLive(activity.startsAt, activity.endsAt) : false;
+    const geo = await getLocation();
     const body = {
       ...(asGuest ? { guestName } : {}),
       ...(live ? { checkin: true } : {}),
+      ...geo,
     };
 
     try {

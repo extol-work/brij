@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import QRCode from "react-qr-code";
+import { getLocation } from "@/lib/geolocation";
 
 interface Member {
   id: string;
@@ -115,10 +116,11 @@ export default function GroupDetailPage() {
   async function handlePost() {
     if (!text.trim()) return;
     setPosting(true);
+    const geo = await getLocation();
     const res = await fetch(`/api/groups/${id}/journal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, ...geo }),
     });
     if (res.ok) {
       const entry = await res.json();

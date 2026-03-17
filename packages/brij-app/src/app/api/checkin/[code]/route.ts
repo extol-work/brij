@@ -63,7 +63,7 @@ export async function POST(
   }
 
   const body = await req.json();
-  const { guestName, checkin } = body;
+  const { guestName, checkin, latitude, longitude } = body;
   const status = checkin ? "checked_in" : "coming";
 
   const authUser = await getAuthUser();
@@ -143,6 +143,8 @@ export async function POST(
       guestName: userId ? null : guestName,
       status,
       ...(checkin ? { checkedInAt: new Date() } : {}),
+      ...(latitude != null ? { latitude: latitude.toString() } : {}),
+      ...(longitude != null ? { longitude: longitude.toString() } : {}),
     })
     .returning();
 

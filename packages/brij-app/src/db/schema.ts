@@ -161,6 +161,8 @@ export const journalEntries = pgTable("journal_entries", {
     .references(() => activities.id, { onDelete: "cascade" }), // null = group-level, set = activity-scoped
   text: text("text").notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }), // soft delete, no edit
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -205,6 +207,8 @@ export const attendances = pgTable("attendances", {
   status: attendanceStatusEnum("status").default("coming").notNull(),
   rsvpAt: timestamp("rsvp_at", { withTimezone: true }).defaultNow().notNull(),
   checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
 });
 
 // --- Contributions ---

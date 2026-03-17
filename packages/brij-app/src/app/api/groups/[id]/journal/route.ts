@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json();
-  const { text, activityId } = body;
+  const { text, activityId, latitude, longitude } = body;
 
   if (!text || typeof text !== "string" || text.trim().length === 0) {
     return NextResponse.json({ error: "text is required" }, { status: 400 });
@@ -91,6 +91,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       authorId: user.id,
       activityId: activityId || null,
       text: text.trim(),
+      ...(latitude != null ? { latitude: latitude.toString() } : {}),
+      ...(longitude != null ? { longitude: longitude.toString() } : {}),
     })
     .returning();
 

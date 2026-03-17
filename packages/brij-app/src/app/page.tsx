@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { identifyUser, track } from "@/lib/posthog";
+import { getLocation } from "@/lib/geolocation";
 
 interface Activity {
   id: string;
@@ -278,10 +279,11 @@ function JournalSection({
   async function handlePost() {
     if (!text.trim()) return;
     setPosting(true);
+    const geo = await getLocation();
     const res = await fetch(`/api/groups/${group.id}/journal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, ...geo }),
     });
     if (res.ok) {
       const entry = await res.json();
