@@ -184,6 +184,7 @@ export const activities = pgTable("activities", {
   seriesId: uuid("series_id"),
   activityType: text("activity_type"),
   photoUrl: text("photo_url"),
+  cardUrl: text("card_url"), // pre-generated card image in Vercel Blob
   summary: text("summary"),
   sentiment: text("sentiment"),
   closedAt: timestamp("closed_at", { withTimezone: true }),

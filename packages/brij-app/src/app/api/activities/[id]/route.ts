@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { activities, attendances } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
+import { generateAndStoreCard } from "@/lib/generate-card";
 import { eq, and } from "drizzle-orm";
 
 export async function GET(
@@ -70,6 +71,15 @@ export async function PATCH(
     })
     .where(eq(activities.id, id))
     .returning();
+
+  // Pre-generate card when activity has a summary (card content is complete)
+  if (summary !== undefined && summary) {
+    const proto = req.headers.get("x-forwarded-proto") ?? "https";
+    const host = req.headers.get("host") ?? "brij.extol.work";
+    const baseUrl = `${proto}://${host}`;
+    // Fire and forget — don't block the response
+    generateAndStoreCard(id, baseUrl).catch(() => {});
+  }
 
   // Auto-create next occurrence when closing a recurring activity
   if (status === "closed" && existing.isRecurring && existing.recurringFrequency && existing.startsAt) {

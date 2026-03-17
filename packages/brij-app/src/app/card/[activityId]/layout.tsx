@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { activities } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 interface Props {
   params: Promise<{ activityId: string }>;
@@ -7,14 +10,22 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { activityId } = await params;
-  const cardImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://brij.extol.work"}/api/cards/${activityId}`;
-  const cardPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://brij.extol.work"}/card/${activityId}`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://brij.extol.work";
+  const cardPageUrl = `${baseUrl}/card/${activityId}`;
+
+  // Use pre-generated card URL if available, fall back to dynamic API
+  const activity = await db.query.activities.findFirst({
+    where: eq(activities.id, activityId),
+  });
+
+  const cardImageUrl = activity?.cardUrl || `${baseUrl}/api/cards/${activityId}`;
+  const title = activity?.title ? `${activity.title} — Extol Card` : "Extol Card — brij";
 
   return {
-    title: "Extol Card — brij",
+    title,
     description: "We showed up. Here's the proof.",
     openGraph: {
-      title: "Extol Card",
+      title: activity?.title || "Extol Card",
       description: "We showed up. Here's the proof.",
       type: "website",
       url: cardPageUrl,
@@ -29,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Extol Card",
+      title: activity?.title || "Extol Card",
       description: "We showed up. Here's the proof.",
       images: [cardImageUrl],
     },

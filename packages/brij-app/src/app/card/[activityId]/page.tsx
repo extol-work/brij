@@ -11,6 +11,7 @@ interface Activity {
   startsAt: string | null;
   location: string | null;
   updatedAt: string;
+  cardUrl: string | null;
 }
 
 export default function CardViewer() {
@@ -33,7 +34,7 @@ export default function CardViewer() {
   }, [activityId]);
 
   const cacheBust = activity?.updatedAt ? `?v=${new Date(activity.updatedAt).getTime()}` : "";
-  const cardUrl = `/api/cards/${activityId}${cacheBust}`;
+  const cardUrl = activity?.cardUrl || `/api/cards/${activityId}${cacheBust}`;
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/card/${activityId}` : "";
 
   async function handleShare() {
