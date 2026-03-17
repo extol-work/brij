@@ -25,6 +25,8 @@ interface Activity {
   closedAt: string | null;
   createdAt: string;
   photoUrl: string | null;
+  groupId: string | null;
+  groupName?: string | null;
 }
 
 interface Attendee {
@@ -514,12 +516,19 @@ export default function ActivityDetail() {
                     className="text-3xl font-bold text-bark-900 bg-transparent border-b-2 border-violet-400 focus:outline-none w-full"
                   />
                 ) : (
-                  <h1
-                    className={`text-3xl font-bold text-bark-900 ${isCoordinator ? "cursor-pointer hover:text-violet-700 transition-colors" : ""}`}
-                    onClick={isCoordinator ? () => setInlineTitle(activity.title) : undefined}
-                  >
-                    {activity.title}
-                  </h1>
+                  <>
+                    <h1
+                      className={`text-3xl font-bold text-bark-900 ${isCoordinator ? "cursor-pointer hover:text-violet-700 transition-colors" : ""}`}
+                      onClick={isCoordinator ? () => setInlineTitle(activity.title) : undefined}
+                    >
+                      {activity.title}
+                    </h1>
+                    {activity.groupName && activity.groupId && (
+                      <a href={`/groups/${activity.groupId}`} className="text-sm text-violet-600 hover:underline mt-1 inline-block">
+                        {activity.groupName}
+                      </a>
+                    )}
+                  </>
                 )}
                 {isCoordinator && inlineTitle === null && (
                   <button

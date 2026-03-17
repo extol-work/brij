@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency } = body;
+  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency, groupId } = body;
 
   // "Now" mode: instant live activity with 12h auto-close
   if (mode === "now") {
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       .values({
         title: "Untitled activity",
         coordinatorId: user.id,
+        groupId: groupId || null,
         status: "open",
         startsAt: now,
         endsAt: autoClose,
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
       title,
       description: description || null,
       coordinatorId: user.id,
+      groupId: groupId || null,
       status: "open",
       startsAt: startsAt ? new Date(startsAt) : null,
       endsAt: endsAt ? new Date(endsAt) : null,

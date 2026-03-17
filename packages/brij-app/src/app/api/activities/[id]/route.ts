@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { activities, attendances } from "@/db/schema";
+import { activities, attendances, groups } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
 import { generateAndStoreCard } from "@/lib/generate-card";
@@ -29,7 +29,16 @@ export async function GET(
     return NextResponse.json(closed);
   }
 
-  return NextResponse.json(activity);
+  // Attach group name if linked
+  let groupName = null;
+  if (activity.groupId) {
+    const group = await db.query.groups.findFirst({
+      where: eq(groups.id, activity.groupId),
+    });
+    groupName = group?.name || null;
+  }
+
+  return NextResponse.json({ ...activity, groupName });
 }
 
 export async function PATCH(

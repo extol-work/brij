@@ -638,7 +638,7 @@ function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupAc
       {isCoordinator && (
         <div className="flex justify-end mb-4">
           <a
-            href="/new"
+            href={`/new?groupId=${groupId}`}
             className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 transition-colors"
           >
             + Create event

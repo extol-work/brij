@@ -1,13 +1,15 @@
 "use client";
 
 import { useSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 
-export default function NewActivity() {
+function NewActivityInner() {
   const { status } = useSession();
   const authenticated = status === "authenticated";
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const groupId = searchParams.get("groupId");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -49,6 +51,7 @@ export default function NewActivity() {
       title: form.get("title"),
       description: form.get("description") || undefined,
       location: form.get("location") || undefined,
+      groupId: groupId || undefined,
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       startsAt: (() => {
@@ -210,5 +213,13 @@ export default function NewActivity() {
         </form>
       </main>
     </div>
+  );
+}
+
+export default function NewActivity() {
+  return (
+    <Suspense>
+      <NewActivityInner />
+    </Suspense>
   );
 }
