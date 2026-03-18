@@ -8,16 +8,29 @@
 const CORTEX_URL = process.env.CORTEX_URL;
 
 async function pushToCortex(path: string, body: Record<string, unknown>): Promise<void> {
-  if (!CORTEX_URL) return;
+  if (!CORTEX_URL) {
+    console.log(`[cortex] CORTEX_URL not set, skipping ${path}`);
+    return;
+  }
+
+  const jsonBody = JSON.stringify(body);
+  const url = `${CORTEX_URL}${path}`;
+  console.log(`[cortex] POST ${url} body=${jsonBody.slice(0, 120)}`);
 
   try {
-    await fetch(`${CORTEX_URL}${path}`, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: jsonBody,
     });
-  } catch {
-    // Best-effort — don't block the action
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error(`[cortex] ${path} failed: ${res.status} ${text.slice(0, 200)}`);
+    } else {
+      console.log(`[cortex] ${path} OK`);
+    }
+  } catch (err) {
+    console.error(`[cortex] ${path} error:`, err instanceof Error ? err.message : err);
   }
 }
 
