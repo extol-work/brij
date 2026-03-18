@@ -38,6 +38,7 @@ export async function generateAndStoreCard(
         access: "public",
         contentType: "image/png",
         addRandomSuffix: false,
+        allowOverwrite: true,
       }
     );
 
