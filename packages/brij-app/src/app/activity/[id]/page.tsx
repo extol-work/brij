@@ -389,7 +389,6 @@ export default function ActivityDetail() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        status: activity!.status === "open" ? "closed" : undefined,
         summary: summaryText,
         sentiment: closureSentiment,
       }),
@@ -1024,12 +1023,21 @@ export default function ActivityDetail() {
 
         {isCoordinator && activity.status === "open" && (
           <button
-            onClick={() => {
-              if (activity.summary) {
-                setClosureText(activity.summary);
-                setClosureSentiment(activity.sentiment || null);
+            onClick={async () => {
+              const res = await fetch(`/api/activities/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "closed" }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.nextActivity) {
+                  setActivity({ ...data, nextActivity: undefined });
+                  setNextActivityId(data.nextActivity.id);
+                } else {
+                  setActivity(data);
+                }
               }
-              setShowClosure(true);
             }}
             className="w-full py-3 rounded-lg font-medium transition-colors bg-warm-gray-200 text-bark-900 hover:bg-warm-gray-400"
           >
