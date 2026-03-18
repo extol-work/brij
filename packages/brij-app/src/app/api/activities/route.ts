@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { activities, attendances } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -35,9 +35,31 @@ export async function GET() {
     });
   }
 
+  // Enrich with attendee counts
+  const allActivities = [...created, ...attended];
+  const countMap = new Map<string, number>();
+  if (allActivities.length > 0) {
+    const counts = await db
+      .select({
+        activityId: attendances.activityId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(attendances)
+      .where(eq(attendances.status, "checked_in"))
+      .groupBy(attendances.activityId);
+    for (const c of counts) {
+      countMap.set(c.activityId, c.count);
+    }
+  }
+
+  const enrich = (a: typeof created[number]) => ({
+    ...a,
+    attendeeCount: countMap.get(a.id) || 0,
+  });
+
   return NextResponse.json({
-    created,
-    attended,
+    created: created.map(enrich),
+    attended: attended.map(enrich),
   });
 }
 

@@ -16,6 +16,11 @@ interface Activity {
   endsAt: string | null;
   location: string | null;
   summary: string | null;
+  photoUrl: string | null;
+  cardUrl: string | null;
+  isRecurring: boolean;
+  seriesId: string | null;
+  attendeeCount: number;
   createdAt: string;
 }
 
@@ -91,6 +96,7 @@ function ActivityCard({ a }: { a: Activity }) {
   const time = formatTime(a.startsAt);
   const meta = [time, a.location].filter(Boolean).join(" · ");
   const [copied, setCopied] = useState(false);
+  const isPast = a.status === "closed" && a.summary;
 
   function copyShareLink(e: React.MouseEvent) {
     e.preventDefault();
@@ -101,6 +107,35 @@ function ActivityCard({ a }: { a: Activity }) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  // Past activities with summary → mini card preview (tap goes to Extol Card)
+  if (isPast) {
+    const statsText = a.attendeeCount >= 4 ? `${a.attendeeCount} showed up` : null;
+    return (
+      <Link
+        href={`/card/${a.id}`}
+        className="flex items-center gap-3 py-3 px-1 border-b border-warm-gray-200 last:border-b-0 hover:bg-cream/50 transition-colors"
+      >
+        <DateBlock startsAt={a.startsAt} />
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
+          <p className="text-xs text-warm-gray-400 mt-0.5">
+            {[statsText, meta].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        {a.photoUrl ? (
+          <div className="w-12 h-16 rounded-lg overflow-hidden shrink-0 bg-warm-gray-100">
+            <img src={a.photoUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <span className="text-xs px-2.5 py-1 rounded-full bg-violet-100 text-violet-700 shrink-0">
+            Card
+          </span>
+        )}
+      </Link>
+    );
+  }
+
+  // Open/draft/closed-without-summary → standard row
   return (
     <Link
       href={`/activity/${a.id}`}
@@ -129,18 +164,6 @@ function ActivityCard({ a }: { a: Activity }) {
         {a.status === "closed" && !a.summary && (
           <span className="text-sm px-3 py-1 rounded-full bg-violet-100 text-violet-600">
             How&apos;d it go?
-          </span>
-        )}
-        {a.status === "closed" && a.summary && (
-          <span
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              window.location.href = `/card/${a.id}`;
-            }}
-            className="text-sm px-3 py-1 rounded-full bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors cursor-pointer"
-          >
-            Extol Card
           </span>
         )}
         {a.status === "open" && (

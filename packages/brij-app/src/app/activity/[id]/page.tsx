@@ -908,9 +908,29 @@ export default function ActivityDetail() {
           </div>
         )}
 
-        {/* "How'd it go?" prompt — coordinator, closed, no summary */}
+        {/* Photo-first closure prompt — coordinator, closed, no summary */}
         {needsClosure && !showClosure && (
           <div className="mb-6 p-5 bg-violet-50 border-2 border-violet-200 rounded-xl">
+            {!activity.photoUrl && (
+              <>
+                <div className="text-center mb-4">
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    className="w-20 h-20 mx-auto rounded-2xl bg-violet-100 border-2 border-violet-300 flex items-center justify-center text-3xl text-violet-500 hover:bg-violet-200 transition-colors disabled:opacity-50"
+                  >
+                    {uploadingPhoto ? "..." : "\uD83D\uDCF7"}
+                  </button>
+                  <p className="text-sm font-semibold text-bark-900 mt-3">Add a photo from today</p>
+                  <p className="text-xs text-warm-gray-400 mt-1">Makes your Extol Card look great</p>
+                </div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-1 h-px bg-warm-gray-200" />
+                  <span className="text-xs text-warm-gray-400">then</span>
+                  <div className="flex-1 h-px bg-warm-gray-200" />
+                </div>
+              </>
+            )}
             <h3 className="text-lg font-bold text-bark-900 mb-1">How&apos;d it go?</h3>
             <p className="text-sm text-warm-gray-500 mb-4">
               {activity.title} &middot; {checkedIn.length} checked in
@@ -921,9 +941,6 @@ export default function ActivityDetail() {
             >
               Add summary
             </button>
-            <p className="text-xs text-warm-gray-400 text-center mt-2">
-              You can always add one later
-            </p>
           </div>
         )}
 
