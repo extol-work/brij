@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth";
 import { db } from "@/db";
 import { expenseEntries, expenseConfirmations, groupMemberships, users } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { pushExpenseConfirmed } from "@/lib/cortex";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -160,6 +161,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       confirmedById: user.id,
     })
     .returning();
+
+  // Push attestation to cortex
+  pushExpenseConfirmed(
+    groupId,
+    entryId,
+    entry.authorId,
+    user.id,
+    entry.amount,
+    entry.currency,
+    entry.description,
+    new Date().toISOString()
+  );
 
   return NextResponse.json({
     ...confirmation,

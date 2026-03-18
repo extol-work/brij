@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth";
 import { db } from "@/db";
 import { groups, groupMemberships } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { pushGroupCreated } from "@/lib/cortex";
 
 /** GET /api/groups — list groups the user belongs to */
 export async function GET() {
@@ -62,6 +63,8 @@ export async function POST(req: NextRequest) {
 
     return group;
   });
+
+  pushGroupCreated(result.id, user.id, result.name, result.createdAt.toISOString());
 
   return NextResponse.json(result, { status: 201 });
 }

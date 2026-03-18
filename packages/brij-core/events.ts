@@ -49,6 +49,10 @@ export interface AttendanceConfirmedEvent {
   userId: string | null;
   guestName: string | null;
   checkedInAt: string;
+  /** Check-in latitude (WGS84). Null if location not captured. */
+  latitude: number | null;
+  /** Check-in longitude (WGS84). Null if location not captured. */
+  longitude: number | null;
 }
 
 export interface ContributionLoggedEvent {
@@ -77,12 +81,65 @@ export interface PeerAttestationEvent {
   createdAt: string;
 }
 
+export interface JournalDigestEvent {
+  type: "journal.digest";
+  /** Group ID — a brij group IS the community for attestation */
+  communityId: string;
+  /** Start of the digest period (YYYY-MM-DD, Monday) */
+  periodStart: string;
+  /** End of the digest period (YYYY-MM-DD, Sunday) */
+  periodEnd: string;
+  /** Number of non-deleted journal entries in this digest */
+  entryCount: number;
+  /** Number of unique authors */
+  uniqueAuthors: number;
+  /** SHA-256 hex of sorted concatenated per-entry hashes */
+  digest: string;
+}
+
+export interface ExpenseConfirmedEvent {
+  type: "expense.confirmed";
+  communityId: string;
+  /** The expense entry being confirmed */
+  entryId: string;
+  /** User who logged the expense */
+  loggedBy: string;
+  /** User who confirmed/witnessed the expense */
+  confirmedBy: string;
+  /** Amount as string to avoid floating point (e.g., "150.00") */
+  amount: string;
+  /** ISO 4217 currency code */
+  currency: string;
+  description: string;
+  confirmedAt: string;
+}
+
+export interface MilestoneAchievedEvent {
+  type: "milestone.achieved";
+  communityId: string;
+  /** e.g., "first_activity_3plus", "first_active_week", "streak_10", "streak_25" */
+  milestoneType: string;
+  achievedAt: string;
+}
+
+export interface GroupCreatedEvent {
+  type: "group.created";
+  communityId: string;
+  creatorId: string;
+  groupName: string;
+  createdAt: string;
+}
+
 export type BrijEventPayload =
   | ActivityCompletedEvent
   | AttendanceConfirmedEvent
   | ContributionLoggedEvent
   | UserDeletedEvent
-  | PeerAttestationEvent;
+  | PeerAttestationEvent
+  | JournalDigestEvent
+  | ExpenseConfirmedEvent
+  | MilestoneAchievedEvent
+  | GroupCreatedEvent;
 
 /** Convenience alias — a fully wrapped event */
 export type BrijEvent = BrijEventEnvelope;

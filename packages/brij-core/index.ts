@@ -7,4 +7,8 @@ export type {
   ContributionLoggedEvent,
   UserDeletedEvent,
   PeerAttestationEvent,
+  JournalDigestEvent,
+  ExpenseConfirmedEvent,
+  MilestoneAchievedEvent,
+  GroupCreatedEvent,
 } from "./events";

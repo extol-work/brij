@@ -14,6 +14,7 @@ import {
   groups,
 } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { pushUserDeleted } from "@/lib/cortex";
 
 /**
  * DELETE /api/account — delete all user data (EXT-35)
@@ -76,42 +77,21 @@ export async function DELETE() {
   }
 
   // Notify cortex middleware before cascade delete (GDPR PDA cleanup)
-  // Cortex can't detect deletions by polling — we must push.
-  const cortexUrl = process.env.CORTEX_URL;
-  if (cortexUrl) {
-    for (const { groupId } of coordinated) {
-      try {
-        await fetch(`${cortexUrl}/user-deleted`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ communityId: groupId, userId }),
-        });
-      } catch {
-        // Best-effort — don't block account deletion if cortex is down
-      }
-    }
-    // Also notify for groups where user is just a member
-    const memberOf = await db
-      .select({ groupId: groupMemberships.groupId })
-      .from(groupMemberships)
-      .where(
-        and(
-          eq(groupMemberships.userId, userId),
-          eq(groupMemberships.role, "member"),
-          eq(groupMemberships.status, "active")
-        )
-      );
-    for (const { groupId } of memberOf) {
-      try {
-        await fetch(`${cortexUrl}/user-deleted`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ communityId: groupId, userId }),
-        });
-      } catch {
-        // Best-effort
-      }
-    }
+  for (const { groupId } of coordinated) {
+    pushUserDeleted(groupId, userId);
+  }
+  const memberOf = await db
+    .select({ groupId: groupMemberships.groupId })
+    .from(groupMemberships)
+    .where(
+      and(
+        eq(groupMemberships.userId, userId),
+        eq(groupMemberships.role, "member"),
+        eq(groupMemberships.status, "active")
+      )
+    );
+  for (const { groupId } of memberOf) {
+    pushUserDeleted(groupId, userId);
   }
 
   // Perform deletion in order (respecting FK constraints)

@@ -9,6 +9,7 @@
  */
 
 import { db } from "@/db";
+import { pushMilestoneAchieved } from "@/lib/cortex";
 import {
   milestones,
   activities,
@@ -31,6 +32,7 @@ async function awardMilestone(groupId: string, type: MilestoneType): Promise<boo
   try {
     await db.insert(milestones).values({ groupId, type });
     console.log(`[milestone] Awarded ${type} to group ${groupId}`);
+    pushMilestoneAchieved(groupId, type, new Date().toISOString());
     return true;
   } catch {
     // Unique constraint — already earned
