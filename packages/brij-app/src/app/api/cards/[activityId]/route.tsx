@@ -166,14 +166,12 @@ export async function GET(
       })
     : "";
 
-  // Flat stat line — no personalization
-  let statLine: string;
-  if (checkedInCount === 0) {
-    statLine = "No one showed up yet";
-  } else if (checkedInCount === 1) {
-    statLine = "1 showed up";
-  } else {
+  // Flat stat line — hide count when < 4 (Umbriel decision)
+  let statLine: string | null;
+  if (checkedInCount >= 4) {
     statLine = `${checkedInCount} showed up`;
+  } else {
+    statLine = null;
   }
 
   // Streak line: "Week N · M came back"
@@ -374,16 +372,18 @@ export async function GET(
             </div>
           )}
 
-          <div
-            style={{
-              fontSize: "84px",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {statLine}
-          </div>
-          {/* EXT-41: Series streak */}
+          {statLine && (
+            <div
+              style={{
+                fontSize: "84px",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {statLine}
+            </div>
+          )}
+          {/* EXT-41: Series streak — always show */}
           {streakLine && (
             <div
               style={{

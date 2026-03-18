@@ -223,12 +223,16 @@ export default function GroupDetailPage() {
       <div className="max-w-lg mx-auto px-4 py-3">
         <div className="flex gap-px bg-warm-gray-200 rounded-xl overflow-hidden">
           <div className="flex-1 bg-white py-3 text-center">
-            <p className="text-xl font-bold text-bark-900">{group.members.length}</p>
+            <p className="text-xl font-bold text-bark-900">{group.members.filter((m) => m.status === "active").length}</p>
             <p className="text-[11px] text-warm-gray-400">members</p>
           </div>
           <div className="flex-1 bg-white py-3 text-center">
-            <p className="text-xl font-bold text-bark-900">{group.entryCount}</p>
-            <p className="text-[11px] text-warm-gray-400">entries</p>
+            <p className="text-xl font-bold text-bark-900">{groupActivities.length}</p>
+            <p className="text-[11px] text-warm-gray-400">events</p>
+          </div>
+          <div className="flex-1 bg-white py-3 text-center">
+            <p className="text-xl font-bold text-bark-900">0</p>
+            <p className="text-[11px] text-warm-gray-400">milestones</p>
           </div>
         </div>
       </div>
