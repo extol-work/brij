@@ -110,17 +110,16 @@ function ActivityCard({ a }: { a: Activity }) {
   // Past activities with summary → mini card preview (tap goes to Extol Card)
   if (isPast) {
     const statsText = a.attendeeCount >= 4 ? `${a.attendeeCount} showed up` : null;
+    const summaryMeta = [statsText, meta].filter(Boolean).join(" · ");
     return (
       <Link
         href={`/card/${a.id}`}
         className="flex items-center gap-3 py-3 px-1 border-b border-warm-gray-200 last:border-b-0 hover:bg-cream/50 transition-colors"
       >
-        <DateBlock startsAt={a.startsAt} />
         <div className="flex-1 min-w-0">
           <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
-          <p className="text-xs text-warm-gray-400 mt-0.5">
-            {[statsText, meta].filter(Boolean).join(" · ")}
-          </p>
+          {a.summary && <p className="text-base text-warm-gray-600 truncate mt-0.5">{a.summary}</p>}
+          {summaryMeta && <p className="text-xs text-warm-gray-400 mt-0.5">{summaryMeta}</p>}
         </div>
         {a.photoUrl ? (
           <div className="w-12 h-16 rounded-lg overflow-hidden shrink-0 bg-warm-gray-100">
