@@ -275,3 +275,24 @@ export const expenseConfirmations = pgTable("expense_confirmations", {
 }, (table) => [
   unique().on(table.entryId, table.confirmedById),
 ]);
+
+// --- Milestones ---
+
+export const milestoneTypeEnum = pgEnum("milestone_type", [
+  "first_activity_3plus",
+  "first_active_week",
+  "streak_10",
+  "streak_25",
+]);
+
+export const milestones = pgTable("milestones", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  type: milestoneTypeEnum("type").notNull(),
+  earnedAt: timestamp("earned_at", { withTimezone: true }).defaultNow().notNull(),
+  cardUrl: text("card_url"),
+}, (table) => [
+  unique().on(table.groupId, table.type),
+]);

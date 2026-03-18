@@ -58,6 +58,7 @@ interface GroupDetail {
   createdById: string;
   members: Member[];
   entryCount: number;
+  milestoneCount: number;
   currentMembership: { role: string };
 }
 
@@ -231,7 +232,7 @@ export default function GroupDetailPage() {
             <p className="text-[11px] text-warm-gray-400">events</p>
           </div>
           <div className="flex-1 bg-white py-3 text-center">
-            <p className="text-xl font-bold text-bark-900">0</p>
+            <p className="text-xl font-bold text-bark-900">{group.milestoneCount}</p>
             <p className="text-[11px] text-warm-gray-400">milestones</p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { activities, attendances, groups } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
 import { generateAndStoreCard } from "@/lib/generate-card";
+import { checkFirstActivity3Plus } from "@/lib/milestones";
 import { eq, and } from "drizzle-orm";
 
 export async function GET(
@@ -80,6 +81,11 @@ export async function PATCH(
     })
     .where(eq(activities.id, id))
     .returning();
+
+  // Check milestone: first activity with 3+ attendees (event-driven)
+  if (status === "closed" && existing.groupId) {
+    checkFirstActivity3Plus(existing.groupId, id).catch(() => {});
+  }
 
   // Pre-generate card when activity has a summary (card content is complete)
   if (summary !== undefined && summary) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { db } from "@/db";
-import { groups, groupMemberships, users, journalEntries } from "@/db/schema";
+import { groups, groupMemberships, users, journalEntries, milestones } from "@/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
 
 type Params = { params: Promise<{ id: string }> };
@@ -59,6 +59,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
       )
     );
 
+  // Milestone count
+  const [{ milestoneCount }] = await db
+    .select({ milestoneCount: sql<number>`count(*)::int` })
+    .from(milestones)
+    .where(eq(milestones.groupId, id));
+
   // Update last_seen_at for unread tracking
   await db
     .update(groupMemberships)
@@ -74,6 +80,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     ...group,
     members,
     entryCount: count,
+    milestoneCount,
     currentMembership: membership,
   });
 }
