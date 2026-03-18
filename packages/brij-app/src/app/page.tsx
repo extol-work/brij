@@ -109,8 +109,13 @@ function ActivityCard({ a }: { a: Activity }) {
 
   // Past activities with summary → mini card preview (tap goes to Extol Card)
   if (isPast) {
-    const statsText = a.attendeeCount >= 4 ? `${a.attendeeCount} showed up` : null;
-    const summaryMeta = [statsText, meta].filter(Boolean).join(" · ");
+    const statParts: string[] = [];
+    if (a.attendeeCount >= 4) statParts.push(`${a.attendeeCount} showed up`);
+    if (meta) statParts.push(meta);
+    const detailLine = [a.summary, statParts.length > 0 ? statParts.join(" · ") : null]
+      .filter(Boolean)
+      .join(" | ");
+    const thumbUrl = a.photoUrl || a.cardUrl;
     return (
       <Link
         href={`/card/${a.id}`}
@@ -118,12 +123,11 @@ function ActivityCard({ a }: { a: Activity }) {
       >
         <div className="flex-1 min-w-0">
           <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
-          {a.summary && <p className="text-base text-warm-gray-600 truncate mt-0.5">{a.summary}</p>}
-          {summaryMeta && <p className="text-xs text-warm-gray-400 mt-0.5">{summaryMeta}</p>}
+          {detailLine && <p className="text-sm text-warm-gray-500 truncate mt-0.5">{detailLine}</p>}
         </div>
-        {a.photoUrl ? (
+        {thumbUrl ? (
           <div className="w-12 h-16 rounded-lg overflow-hidden shrink-0 bg-warm-gray-100">
-            <img src={a.photoUrl} alt="" className="w-full h-full object-cover" />
+            <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
           </div>
         ) : (
           <span className="text-xs px-2.5 py-1 rounded-full bg-violet-100 text-violet-700 shrink-0">
