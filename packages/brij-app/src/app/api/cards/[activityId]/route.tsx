@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { activities, attendances, users } from "@/db/schema";
+import { activities, attendances, users, groups } from "@/db/schema";
 import { eq, and, lte, ne, inArray, sql } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
 import QRCode from "qrcode";
@@ -135,8 +135,12 @@ export async function GET(
     }
   }
 
-  // Group name — disabled for debugging
-  const groupName: string | null = null;
+  // Resolve group name
+  let groupName: string | null = null;
+  if (activity.groupId) {
+    const group = await db.query.groups.findFirst({ where: eq(groups.id, activity.groupId) });
+    groupName = group?.name || null;
+  }
 
   // Select background — uploaded photo takes priority
   const activityType = activity.activityType ?? null;
@@ -457,6 +461,11 @@ export async function GET(
                   opacity: 0.45,
                 }}
               >
+                <img
+                  src={`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F5E6D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>')}`}
+                  width={40}
+                  height={40}
+                />
                 Verified on Solana
               </div>
               <div
