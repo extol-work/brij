@@ -464,9 +464,9 @@ export async function GET(
             </div>
             <div
               style={{
-                fontSize: "36px",
-                fontWeight: 500,
-                opacity: 0.35,
+                fontSize: "28px",
+                fontWeight: 400,
+                opacity: 0.3,
                 letterSpacing: "0.02em",
                 marginTop: "4px",
               }}

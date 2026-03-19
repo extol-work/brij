@@ -131,6 +131,13 @@ export default function ActivityDetail() {
   const [showOnBehalf, setShowOnBehalf] = useState(false);
   const [walkUpName, setWalkUpName] = useState("");
   const [addingWalkUp, setAddingWalkUp] = useState(false);
+  const walkUpInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showOnBehalf && walkUpInputRef.current) {
+      setTimeout(() => walkUpInputRef.current?.focus(), 100);
+    }
+  }, [showOnBehalf]);
   const [showClosure, setShowClosure] = useState(false);
   const [closureSentiment, setClosureSentiment] = useState<string | null>(null);
   const [closureText, setClosureText] = useState("");
@@ -861,7 +868,7 @@ export default function ActivityDetail() {
                 {/* Walk-up name input */}
                 <div className="flex gap-2">
                   <input
-                    autoFocus
+                    ref={walkUpInputRef}
                     value={walkUpName}
                     onChange={(e) => setWalkUpName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addWalkUp()}
