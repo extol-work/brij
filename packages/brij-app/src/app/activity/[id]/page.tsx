@@ -985,14 +985,19 @@ export default function ActivityDetail() {
               ))}
             </div>
 
-            {/* Text field */}
-            <textarea
-              value={closureText}
-              onChange={(e) => setClosureText(e.target.value)}
-              placeholder="What happened? (optional)"
-              rows={3}
-              className="w-full px-3 py-3 border border-warm-gray-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 resize-none mb-4"
-            />
+            {/* Text field with character countdown */}
+            <div className="relative mb-4">
+              <textarea
+                value={closureText}
+                onChange={(e) => { if (e.target.value.length <= 120) setClosureText(e.target.value); }}
+                placeholder="What happened? (optional)"
+                rows={3}
+                className="w-full px-3 py-3 border border-warm-gray-200 rounded-xl text-base focus:outline-none focus:border-violet-400 resize-none"
+              />
+              <span className={`absolute bottom-2 right-3 text-xs ${closureText.length > 100 ? "text-amber-500" : "text-warm-gray-300"} ${closureText.length >= 120 ? "text-red-500 font-semibold" : ""}`}>
+                {120 - closureText.length}
+              </span>
+            </div>
 
             {/* Submit */}
             <button

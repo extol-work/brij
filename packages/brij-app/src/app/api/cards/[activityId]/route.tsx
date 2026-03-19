@@ -201,12 +201,19 @@ export async function GET(
       ? activity.title.slice(0, 38) + "…"
       : activity.title;
 
-  // Summary line (from coordinator closure)
-  const summaryText = activity.summary
-    ? activity.summary.length > 80
-      ? activity.summary.slice(0, 78) + "…"
-      : activity.summary
-    : null;
+  // Summary line (from coordinator closure) — clean word-break, no ellipsis
+  const MAX_SUMMARY = 120;
+  let summaryText: string | null = null;
+  if (activity.summary) {
+    if (activity.summary.length <= MAX_SUMMARY) {
+      summaryText = activity.summary;
+    } else {
+      // Cut at last space before limit
+      const trimmed = activity.summary.slice(0, MAX_SUMMARY);
+      const lastSpace = trimmed.lastIndexOf(" ");
+      summaryText = lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
+    }
+  }
 
   // Generate QR code as data URL
   const qrUrl = `https://brij.extol.work/activity/${activityId}`;
