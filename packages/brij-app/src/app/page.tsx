@@ -201,47 +201,64 @@ function GroupSwitcher({
 }) {
   if (groups.length === 0) return null;
 
-  return (
-    <div className="flex items-center gap-0 mb-4">
-      <div className="flex gap-4 overflow-x-auto flex-1 px-1 py-2 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-        {groups.map((g) => (
-          <button
-            key={g.id}
-            onClick={() => onSelect(g.id)}
-            className="flex flex-col items-center gap-1 shrink-0"
-          >
-            <div
-              className={`w-[52px] h-[52px] rounded-full flex items-center justify-center text-lg font-bold text-white ${
-                activeGroupId === g.id
-                  ? "ring-[2.5px] ring-offset-2 ring-violet-600"
-                  : ""
-              }`}
-              style={{ backgroundColor: g.color }}
-            >
-              {g.name.charAt(0).toUpperCase()}
-            </div>
-            <span
-              className={`text-[11px] max-w-[60px] text-center truncate ${
-                activeGroupId === g.id
-                  ? "text-bark-900 font-semibold"
-                  : "text-warm-gray-500"
-              }`}
-            >
-              {g.name}
-            </span>
-          </button>
-        ))}
+  // Responsive: each circle is ~68px (52px + 16px gap). Reserve ~136px for overflow + "+" circle.
+  // On mobile (~375px viewport), that's ~3-4 visible. On desktop, more.
+  const MAX_VISIBLE = typeof window !== "undefined" ? Math.max(3, Math.floor((window.innerWidth - 136) / 68)) : 4;
+  const overflow = groups.length > MAX_VISIBLE ? groups.length - MAX_VISIBLE + 1 : 0; // +1 to make room for overflow badge
+  const visible = overflow > 0 ? groups.slice(0, MAX_VISIBLE - 1) : groups;
 
-        {/* + circle */}
-        <Link
-          href={groups.length > 0 ? "/groups" : "/groups/new"}
+  return (
+    <div className="flex items-center gap-3 mb-4 px-1 py-2">
+      {visible.map((g) => (
+        <button
+          key={g.id}
+          onClick={() => onSelect(g.id)}
           className="flex flex-col items-center gap-1 shrink-0"
         >
-          <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: "#c4b8a8" }}>
-            <span className="text-2xl leading-none text-white font-bold">+</span>
+          <div
+            className={`w-[52px] h-[52px] rounded-full flex items-center justify-center text-lg font-bold text-white ${
+              activeGroupId === g.id
+                ? "ring-[2.5px] ring-offset-2 ring-violet-600"
+                : ""
+            }`}
+            style={{ backgroundColor: g.color }}
+          >
+            {g.name.charAt(0).toUpperCase()}
           </div>
+          <span
+            className={`text-[11px] max-w-[60px] text-center truncate ${
+              activeGroupId === g.id
+                ? "text-bark-900 font-semibold"
+                : "text-warm-gray-500"
+            }`}
+          >
+            {g.name}
+          </span>
+        </button>
+      ))}
+
+      {/* Overflow count */}
+      {overflow > 0 && (
+        <Link
+          href="/groups"
+          className="flex flex-col items-center gap-1 shrink-0"
+        >
+          <div className="w-[52px] h-[52px] rounded-full bg-warm-gray-200 flex items-center justify-center text-sm font-bold text-warm-gray-500">
+            +{overflow}
+          </div>
+          <span className="text-[11px] text-warm-gray-400">more</span>
         </Link>
-      </div>
+      )}
+
+      {/* + circle — always visible */}
+      <Link
+        href={groups.length > 0 ? "/groups" : "/groups/new"}
+        className="flex flex-col items-center gap-1 shrink-0"
+      >
+        <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: "#c4b8a8" }}>
+          <span className="text-2xl leading-none text-white font-bold">+</span>
+        </div>
+      </Link>
     </div>
   );
 }
