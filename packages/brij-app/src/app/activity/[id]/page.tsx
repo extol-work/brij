@@ -861,11 +861,12 @@ export default function ActivityDetail() {
                 {/* Walk-up name input */}
                 <div className="flex gap-2">
                   <input
+                    autoFocus
                     value={walkUpName}
                     onChange={(e) => setWalkUpName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addWalkUp()}
                     placeholder="Add a name (walk-up)..."
-                    className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-violet-400"
+                    className="flex-1 px-3 py-2 border border-warm-gray-200 rounded-lg text-base bg-white focus:outline-none focus:border-violet-400"
                   />
                   <button
                     onClick={addWalkUp}

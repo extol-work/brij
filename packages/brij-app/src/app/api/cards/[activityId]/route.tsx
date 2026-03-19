@@ -439,7 +439,7 @@ export async function GET(
                   fontWeight: 400,
                   opacity: 0.65,
                   lineHeight: 1.3,
-                  marginBottom: "48px",
+                  marginBottom: "38px",
                 }}
               >
                 {summaryText}
@@ -455,9 +455,9 @@ export async function GET(
                 opacity: 0.6,
               }}
             >
-              <div style={{ display: "flex", position: "relative", width: "40px", height: "40px" }}>
-                <div style={{ width: "22px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "18px", left: "1px", transform: "rotate(45deg)" }} />
-                <div style={{ width: "22px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "10px", left: "12px", transform: "rotate(45deg)" }} />
+              <div style={{ display: "flex", position: "relative", width: "48px", height: "48px" }}>
+                <div style={{ width: "28px", height: "14px", borderRadius: "7px", border: `4px solid ${TEXT_COLOR}`, position: "absolute", top: "22px", left: "0px", transform: "rotate(45deg)" }} />
+                <div style={{ width: "28px", height: "14px", borderRadius: "7px", border: `4px solid ${TEXT_COLOR}`, position: "absolute", top: "12px", left: "16px", transform: "rotate(45deg)" }} />
               </div>
               Verified on Solana
             </div>
@@ -474,24 +474,24 @@ export async function GET(
             </div>
           </div>
 
-          {/* QR code — 270px (10% smaller) */}
+          {/* QR code — 243px */}
           <div
             style={{
-              width: "270px",
-              height: "270px",
+              width: "243px",
+              height: "243px",
               flexShrink: 0,
               background: "rgba(255,255,255,0.12)",
-              borderRadius: "24px",
+              borderRadius: "22px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "12px",
+              padding: "10px",
             }}
           >
             <img
               src={qrDataUrl}
-              width={246}
-              height={246}
+              width={223}
+              height={223}
               style={{ borderRadius: "14px" }}
             />
           </div>
