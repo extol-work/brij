@@ -422,84 +422,75 @@ export async function GET(
           )}
         </div>
 
-        {/* Summary — full width */}
-        {summaryText && (
-          <div
-            style={{
-              padding: "0 60px 24px",
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
+        {/* Footer zone — summary full width, then branding + QR */}
+        <div
+          style={{
+            padding: "48px 60px 60px",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          {summaryText && (
             <div
               style={{
                 fontSize: "42px",
                 fontWeight: 400,
                 opacity: 0.65,
                 lineHeight: 1.3,
+                marginBottom: "32px",
               }}
             >
               {summaryText}
             </div>
-          </div>
-        )}
-
-        {/* Footer — branding + QR */}
-        <div
-          style={{
-            padding: "0 60px 60px",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: "40px",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+          )}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "40px" }}>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  fontSize: "52px",
+                  fontWeight: 500,
+                  opacity: 0.45,
+                }}
+              >
+                Verified on Solana
+              </div>
+              <div
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 400,
+                  opacity: 0.3,
+                  letterSpacing: "0.02em",
+                  marginTop: "4px",
+                }}
+              >
+                brij.extol.work
+              </div>
+            </div>
             <div
               style={{
+                width: "243px",
+                height: "243px",
+                flexShrink: 0,
+                background: "rgba(255,255,255,0.12)",
+                borderRadius: "22px",
                 display: "flex",
                 alignItems: "center",
-                gap: "16px",
-                fontSize: "52px",
-                fontWeight: 500,
-                opacity: 0.45,
+                justifyContent: "center",
+                padding: "10px",
               }}
             >
-              Verified on Solana
+              <img
+                src={qrDataUrl}
+                width={223}
+                height={223}
+                style={{ borderRadius: "14px" }}
+              />
             </div>
-            <div
-              style={{
-                fontSize: "28px",
-                fontWeight: 400,
-                opacity: 0.3,
-                letterSpacing: "0.02em",
-                marginTop: "4px",
-              }}
-            >
-              brij.extol.work
-            </div>
-          </div>
-          <div
-            style={{
-              width: "243px",
-              height: "243px",
-              flexShrink: 0,
-              background: "rgba(255,255,255,0.12)",
-              borderRadius: "22px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "10px",
-            }}
-          >
-            <img
-              src={qrDataUrl}
-              width={223}
-              height={223}
-              style={{ borderRadius: "14px" }}
-            />
           </div>
         </div>
       </div>
