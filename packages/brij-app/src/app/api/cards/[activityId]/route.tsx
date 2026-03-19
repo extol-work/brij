@@ -135,12 +135,8 @@ export async function GET(
     }
   }
 
-  // Resolve group name
-  let groupName: string | null = null;
-  if (activity.groupId) {
-    const group = await db.query.groups.findFirst({ where: eq(groups.id, activity.groupId) });
-    groupName = group?.name || null;
-  }
+  // Group name — disabled for debugging
+  const groupName: string | null = null;
 
   // Select background — uploaded photo takes priority
   const activityType = activity.activityType ?? null;
