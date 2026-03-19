@@ -455,14 +455,10 @@ export async function GET(
                 opacity: 0.6,
               }}
             >
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  background: `${TEXT_COLOR}`,
-                }}
-              />
+              <div style={{ display: "flex", alignItems: "center", position: "relative", width: "44px", height: "28px" }}>
+                <div style={{ width: "24px", height: "24px", borderRadius: "8px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", left: "0px", transform: "rotate(-30deg)" }} />
+                <div style={{ width: "24px", height: "24px", borderRadius: "8px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", left: "14px", transform: "rotate(30deg)" }} />
+              </div>
               Verified on Solana
             </div>
             <div
