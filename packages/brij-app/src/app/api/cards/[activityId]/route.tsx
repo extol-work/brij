@@ -455,9 +455,9 @@ export async function GET(
                 opacity: 0.6,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", position: "relative", width: "44px", height: "28px" }}>
-                <div style={{ width: "24px", height: "24px", borderRadius: "8px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", left: "0px", transform: "rotate(-30deg)" }} />
-                <div style={{ width: "24px", height: "24px", borderRadius: "8px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", left: "14px", transform: "rotate(30deg)" }} />
+              <div style={{ display: "flex", position: "relative", width: "40px", height: "40px" }}>
+                <div style={{ width: "20px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "8px", left: "2px", transform: "rotate(-45deg)" }} />
+                <div style={{ width: "20px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "18px", left: "14px", transform: "rotate(-45deg)" }} />
               </div>
               Verified on Solana
             </div>
