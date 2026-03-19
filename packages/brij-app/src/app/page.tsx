@@ -736,10 +736,11 @@ export default function Dashboard() {
   });
   const visiblePast = allPast.slice(0, pastLimit);
   const hasMorePast = allPast.length > pastLimit;
+  const hasAnyPastUnfiltered = created.some((a) => !isUpcoming(a)) || attended.some((a) => !isUpcoming(a));
 
   const hasUpcoming = upcomingCreated.length > 0 || upcomingAttended.length > 0;
   const hasPast = allPast.length > 0;
-  const hasNothing = !hasUpcoming && !hasPast;
+  const hasNothing = !hasUpcoming && !hasPast && !hasAnyPastUnfiltered;
   const hasAnyActivities = created.length > 0 || attended.length > 0;
 
   const activeGroup = groups.find((g) => g.id === activeGroupId) || null;
@@ -871,7 +872,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {hasPast && (
+            {hasAnyPastUnfiltered && (
               <div className="pt-4 border-t border-warm-gray-200">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide">
@@ -896,11 +897,15 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-                <div>
-                  {visiblePast.map((a) => (
-                    <ActivityCard key={a.id} a={a} />
-                  ))}
-                </div>
+                {allPast.length > 0 ? (
+                  <div>
+                    {visiblePast.map((a) => (
+                      <ActivityCard key={a.id} a={a} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-warm-gray-400 text-center py-6">All past activities filtered</p>
+                )}
                 {hasMorePast && (
                   <button
                     onClick={() => setPastLimit((l) => l + 10)}
