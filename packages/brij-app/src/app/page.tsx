@@ -612,8 +612,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [startingNow, setStartingNow] = useState(false);
   const [pastLimit, setPastLimit] = useState(10);
-  const [hideGroup, setHideGroup] = useState(false);
-  const [hidePersonal, setHidePersonal] = useState(false);
+  const [hideGroupUpcoming, setHideGroupUpcoming] = useState(false);
+  const [hidePersonalUpcoming, setHidePersonalUpcoming] = useState(false);
+  const [hideGroupPast, setHideGroupPast] = useState(false);
+  const [hidePersonalPast, setHidePersonalPast] = useState(false);
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
@@ -716,16 +718,21 @@ export default function Dashboard() {
     return tb - ta;
   };
 
-  const filterActivity = (a: Activity) => {
-    if (hideGroup && a.groupId) return false;
-    if (hidePersonal && !a.groupId) return false;
+  const filterUpcoming = (a: Activity) => {
+    if (hideGroupUpcoming && a.groupId) return false;
+    if (hidePersonalUpcoming && !a.groupId) return false;
+    return true;
+  };
+  const filterPast = (a: Activity) => {
+    if (hideGroupPast && a.groupId) return false;
+    if (hidePersonalPast && !a.groupId) return false;
     return true;
   };
 
-  const upcomingCreated = created.filter(isUpcoming).filter(filterActivity).sort(sortByStartAsc);
-  const pastCreated = created.filter((a) => !isUpcoming(a)).filter(filterActivity).sort(sortByStartDesc);
-  const upcomingAttended = attended.filter(isUpcoming).filter(filterActivity).sort(sortByStartAsc);
-  const pastAttended = attended.filter((a) => !isUpcoming(a)).filter(filterActivity).sort(sortByStartDesc);
+  const upcomingCreated = created.filter(isUpcoming).filter(filterUpcoming).sort(sortByStartAsc);
+  const pastCreated = created.filter((a) => !isUpcoming(a)).filter(filterPast).sort(sortByStartDesc);
+  const upcomingAttended = attended.filter(isUpcoming).filter(filterUpcoming).sort(sortByStartAsc);
+  const pastAttended = attended.filter((a) => !isUpcoming(a)).filter(filterPast).sort(sortByStartDesc);
 
   const allPast = [...pastCreated, ...pastAttended].sort((a, b) => {
     const ta = a.startsAt ? new Date(a.startsAt).getTime() : 0;
@@ -807,35 +814,9 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Filter toggles */}
-        {hasAnyActivities && (
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setHideGroup(!hideGroup)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                hideGroup
-                  ? "border-amber-300 bg-amber-50 text-amber-700"
-                  : "border-warm-gray-200 text-warm-gray-400 hover:border-warm-gray-300"
-              }`}
-            >
-              {hideGroup ? "Group hidden" : "Hide group"}
-            </button>
-            <button
-              onClick={() => setHidePersonal(!hidePersonal)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                hidePersonal
-                  ? "border-amber-300 bg-amber-50 text-amber-700"
-                  : "border-warm-gray-200 text-warm-gray-400 hover:border-warm-gray-300"
-              }`}
-            >
-              {hidePersonal ? "Personal hidden" : "Hide personal"}
-            </button>
-          </div>
-        )}
-
         {loading ? (
           <p className="text-warm-gray-500">Loading...</p>
-        ) : hasNothing && (hideGroup || hidePersonal) ? (
+        ) : hasNothing && (hideGroupUpcoming || hidePersonalUpcoming || hideGroupPast || hidePersonalPast) ? (
           <div className="text-center py-12">
             <p className="text-warm-gray-400 text-sm">All activities filtered out</p>
           </div>
@@ -855,9 +836,29 @@ export default function Dashboard() {
           <div className="space-y-8">
             {upcomingCreated.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">
-                  Organized by you
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide">
+                    Organized by you
+                  </h3>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setHideGroupUpcoming(!hideGroupUpcoming)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                        hideGroupUpcoming ? "border-amber-300 bg-amber-50 text-amber-700" : "border-warm-gray-200 text-warm-gray-400"
+                      }`}
+                    >
+                      {hideGroupUpcoming ? "Group hidden" : "Hide group"}
+                    </button>
+                    <button
+                      onClick={() => setHidePersonalUpcoming(!hidePersonalUpcoming)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                        hidePersonalUpcoming ? "border-amber-300 bg-amber-50 text-amber-700" : "border-warm-gray-200 text-warm-gray-400"
+                      }`}
+                    >
+                      {hidePersonalUpcoming ? "Personal hidden" : "Hide personal"}
+                    </button>
+                  </div>
+                </div>
                 <div>
                   {upcomingCreated.map((a) => (
                     <ActivityCard key={a.id} a={a} />
@@ -881,9 +882,29 @@ export default function Dashboard() {
 
             {hasPast && (
               <div className="pt-4 border-t border-warm-gray-200">
-                <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">
-                  Past activities
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide">
+                    Past activities
+                  </h3>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setHideGroupPast(!hideGroupPast)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                        hideGroupPast ? "border-amber-300 bg-amber-50 text-amber-700" : "border-warm-gray-200 text-warm-gray-400"
+                      }`}
+                    >
+                      {hideGroupPast ? "Group hidden" : "Hide group"}
+                    </button>
+                    <button
+                      onClick={() => setHidePersonalPast(!hidePersonalPast)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                        hidePersonalPast ? "border-amber-300 bg-amber-50 text-amber-700" : "border-warm-gray-200 text-warm-gray-400"
+                      }`}
+                    >
+                      {hidePersonalPast ? "Personal hidden" : "Hide personal"}
+                    </button>
+                  </div>
+                </div>
                 <div>
                   {visiblePast.map((a) => (
                     <ActivityCard key={a.id} a={a} />
