@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { activities, attendances } from "@/db/schema";
+import { activities, attendances, groups } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
 import { eq, or, sql } from "drizzle-orm";
@@ -52,9 +52,20 @@ export async function GET() {
     }
   }
 
+  // Resolve group names
+  const groupIds = [...new Set(allActivities.map((a) => a.groupId).filter(Boolean))] as string[];
+  const groupNameMap = new Map<string, string>();
+  if (groupIds.length > 0) {
+    for (const gid of groupIds) {
+      const g = await db.query.groups.findFirst({ where: eq(groups.id, gid) });
+      if (g) groupNameMap.set(g.id, g.name);
+    }
+  }
+
   const enrich = (a: typeof created[number]) => ({
     ...a,
     attendeeCount: countMap.get(a.id) || 0,
+    groupName: a.groupId ? groupNameMap.get(a.groupId) || null : null,
   });
 
   return NextResponse.json({

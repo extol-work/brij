@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { activities, attendances, users } from "@/db/schema";
+import { activities, attendances, users, groups } from "@/db/schema";
 import { eq, and, lte, ne, inArray, sql } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
 import QRCode from "qrcode";
@@ -133,6 +133,13 @@ export async function GET(
         returningCount = returningUsers.length;
       }
     }
+  }
+
+  // Resolve group name
+  let groupName: string | null = null;
+  if (activity.groupId) {
+    const group = await db.query.groups.findFirst({ where: eq(groups.id, activity.groupId) });
+    groupName = group?.name || null;
   }
 
   // Select background — uploaded photo takes priority
@@ -278,6 +285,19 @@ export async function GET(
             zIndex: 1,
           }}
         >
+          {groupName && (
+            <div
+              style={{
+                fontSize: "48px",
+                fontWeight: 500,
+                opacity: 0.7,
+                marginBottom: "12px",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {groupName}
+            </div>
+          )}
           <div
             style={{
               fontSize: "108px",

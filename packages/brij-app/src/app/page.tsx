@@ -21,6 +21,8 @@ interface Activity {
   isRecurring: boolean;
   seriesId: string | null;
   attendeeCount: number;
+  groupId: string | null;
+  groupName: string | null;
   createdAt: string;
 }
 
@@ -122,6 +124,7 @@ function ActivityCard({ a }: { a: Activity }) {
         className="flex items-center gap-3 py-3 px-1 border-b border-warm-gray-200 last:border-b-0 hover:bg-cream/50 transition-colors"
       >
         <div className="flex-1 min-w-0">
+          {a.groupName && <p className="text-xs text-violet-500 font-medium truncate">{a.groupName}</p>}
           <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
           {detailLine && <p className="text-sm text-warm-gray-500 truncate mt-0.5">{detailLine}</p>}
         </div>
@@ -146,6 +149,7 @@ function ActivityCard({ a }: { a: Activity }) {
     >
       <DateBlock startsAt={a.startsAt} />
       <div className="flex-1 min-w-0 pt-0.5">
+        {a.groupName && <p className="text-xs text-violet-500 font-medium truncate">{a.groupName}</p>}
         <p className="text-base font-semibold text-bark-900 truncate">{a.title}</p>
         {meta && <p className="text-sm text-warm-gray-500 mt-0.5">{meta}</p>}
       </div>
