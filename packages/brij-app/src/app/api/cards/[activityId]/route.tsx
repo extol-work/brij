@@ -426,80 +426,80 @@ export async function GET(
           )}
         </div>
 
-        {/* Footer zone — summary full width, then branding + QR */}
+        {/* Footer zone — summary + branding left, QR right */}
         <div
           style={{
             padding: "48px 60px 60px",
             display: "flex",
-            flexDirection: "column",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            gap: "40px",
             position: "relative",
             zIndex: 1,
           }}
         >
-          {summaryText && (
-            <div
-              style={{
-                fontSize: "42px",
-                fontWeight: 400,
-                opacity: 0.65,
-                lineHeight: 1.3,
-                marginBottom: "32px",
-              }}
-            >
-              {summaryText}
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "40px" }}>
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+            {summaryText && (
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
-                  fontSize: "52px",
-                  fontWeight: 500,
-                  opacity: 0.45,
-                }}
-              >
-                <img
-                  src={`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F5E6D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>')}`}
-                  width={40}
-                  height={40}
-                />
-                Verified on Solana
-              </div>
-              <div
-                style={{
-                  fontSize: "28px",
+                  fontSize: "42px",
                   fontWeight: 400,
-                  opacity: 0.3,
-                  letterSpacing: "0.02em",
-                  marginTop: "4px",
+                  opacity: 0.65,
+                  lineHeight: 1.3,
+                  marginBottom: "32px",
                 }}
               >
-                brij.extol.work
+                {summaryText}
               </div>
-            </div>
+            )}
             <div
               style={{
-                width: "243px",
-                height: "243px",
-                flexShrink: 0,
-                background: "rgba(255,255,255,0.12)",
-                borderRadius: "22px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                padding: "10px",
+                gap: "16px",
+                fontSize: "52px",
+                fontWeight: 500,
+                opacity: 0.45,
               }}
             >
               <img
-                src={qrDataUrl}
-                width={223}
-                height={223}
-                style={{ borderRadius: "14px" }}
+                src={`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F5E6D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>')}`}
+                width={40}
+                height={40}
               />
+              Verified on Solana
             </div>
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: 400,
+                opacity: 0.3,
+                letterSpacing: "0.02em",
+                marginTop: "4px",
+              }}
+            >
+              brij.extol.work
+            </div>
+          </div>
+          <div
+            style={{
+              width: "243px",
+              height: "243px",
+              flexShrink: 0,
+              background: "rgba(255,255,255,0.12)",
+              borderRadius: "22px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "10px",
+            }}
+          >
+            <img
+              src={qrDataUrl}
+              width={223}
+              height={223}
+              style={{ borderRadius: "14px" }}
+            />
           </div>
         </div>
       </div>
