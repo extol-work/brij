@@ -5,16 +5,15 @@
  * is unreachable, the action proceeds without blocking.
  */
 
-const CORTEX_URL = process.env.CORTEX_URL;
-
 async function pushToCortex(path: string, body: Record<string, unknown>): Promise<void> {
-  if (!CORTEX_URL) {
+  const cortexUrl = process.env.CORTEX_URL;
+  if (!cortexUrl) {
     console.log(`[cortex] CORTEX_URL not set, skipping ${path}`);
     return;
   }
 
   const jsonBody = JSON.stringify(body);
-  const url = `${CORTEX_URL}${path}`;
+  const url = `${cortexUrl}${path}`;
   console.log(`[cortex] POST ${url} body=${jsonBody.slice(0, 120)}`);
 
   try {
