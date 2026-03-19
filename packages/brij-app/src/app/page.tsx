@@ -612,10 +612,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [startingNow, setStartingNow] = useState(false);
   const [pastLimit, setPastLimit] = useState(10);
-  const [hideGroupUpcoming, setHideGroupUpcoming] = useState(false);
-  const [hidePersonalUpcoming, setHidePersonalUpcoming] = useState(false);
   const [hideGroupPast, setHideGroupPast] = useState(false);
   const [hidePersonalPast, setHidePersonalPast] = useState(false);
+  const [createdLimit, setCreatedLimit] = useState(5);
+  const [attendedLimit, setAttendedLimit] = useState(5);
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
@@ -718,20 +718,15 @@ export default function Dashboard() {
     return tb - ta;
   };
 
-  const filterUpcoming = (a: Activity) => {
-    if (hideGroupUpcoming && a.groupId) return false;
-    if (hidePersonalUpcoming && !a.groupId) return false;
-    return true;
-  };
   const filterPast = (a: Activity) => {
     if (hideGroupPast && a.groupId) return false;
     if (hidePersonalPast && !a.groupId) return false;
     return true;
   };
 
-  const upcomingCreated = created.filter(isUpcoming).filter(filterUpcoming).sort(sortByStartAsc);
+  const upcomingCreated = created.filter(isUpcoming).sort(sortByStartAsc);
   const pastCreated = created.filter((a) => !isUpcoming(a)).filter(filterPast).sort(sortByStartDesc);
-  const upcomingAttended = attended.filter(isUpcoming).filter(filterUpcoming).sort(sortByStartAsc);
+  const upcomingAttended = attended.filter(isUpcoming).sort(sortByStartAsc);
   const pastAttended = attended.filter((a) => !isUpcoming(a)).filter(filterPast).sort(sortByStartDesc);
 
   const allPast = [...pastCreated, ...pastAttended].sort((a, b) => {
@@ -816,7 +811,7 @@ export default function Dashboard() {
 
         {loading ? (
           <p className="text-warm-gray-500">Loading...</p>
-        ) : hasNothing && (hideGroupUpcoming || hidePersonalUpcoming || hideGroupPast || hidePersonalPast) ? (
+        ) : hasNothing && (hideGroupPast || hidePersonalPast) ? (
           <div className="text-center py-12">
             <p className="text-warm-gray-400 text-sm">All activities filtered out</p>
           </div>
@@ -836,34 +831,22 @@ export default function Dashboard() {
           <div className="space-y-8">
             {upcomingCreated.length > 0 && (
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide">
-                    Organized by you
-                  </h3>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => setHideGroupUpcoming(!hideGroupUpcoming)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
-                        hideGroupUpcoming ? "border-amber-300 bg-amber-50 text-amber-700" : "border-warm-gray-200 text-warm-gray-400"
-                      }`}
-                    >
-                      {hideGroupUpcoming ? "Group hidden" : "Hide group"}
-                    </button>
-                    <button
-                      onClick={() => setHidePersonalUpcoming(!hidePersonalUpcoming)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
-                        hidePersonalUpcoming ? "border-amber-300 bg-amber-50 text-amber-700" : "border-warm-gray-200 text-warm-gray-400"
-                      }`}
-                    >
-                      {hidePersonalUpcoming ? "Personal hidden" : "Hide personal"}
-                    </button>
-                  </div>
-                </div>
+                <h3 className="text-sm font-medium text-warm-gray-500 uppercase tracking-wide mb-3">
+                  Organized by you
+                </h3>
                 <div>
-                  {upcomingCreated.map((a) => (
+                  {upcomingCreated.slice(0, createdLimit).map((a) => (
                     <ActivityCard key={a.id} a={a} />
                   ))}
                 </div>
+                {upcomingCreated.length > createdLimit && (
+                  <button
+                    onClick={() => setCreatedLimit((l) => l + 5)}
+                    className="w-full mt-2 py-2 text-sm font-medium text-warm-gray-500 hover:text-bark-900 transition-colors"
+                  >
+                    Show more ({upcomingCreated.length - createdLimit} more)
+                  </button>
+                )}
               </div>
             )}
 
@@ -873,10 +856,18 @@ export default function Dashboard() {
                   Attending
                 </h3>
                 <div>
-                  {upcomingAttended.map((a) => (
+                  {upcomingAttended.slice(0, attendedLimit).map((a) => (
                     <ActivityCard key={a.id} a={a} />
                   ))}
                 </div>
+                {upcomingAttended.length > attendedLimit && (
+                  <button
+                    onClick={() => setAttendedLimit((l) => l + 5)}
+                    className="w-full mt-2 py-2 text-sm font-medium text-warm-gray-500 hover:text-bark-900 transition-colors"
+                  >
+                    Show more ({upcomingAttended.length - attendedLimit} more)
+                  </button>
+                )}
               </div>
             )}
 
