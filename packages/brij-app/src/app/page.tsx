@@ -252,7 +252,7 @@ function GroupSwitcher({
 
       {/* + circle — always visible */}
       <Link
-        href={groups.length > 0 ? "/groups" : "/groups/new"}
+        href={overflow > 0 ? "/groups/new" : "/groups"}
         className="flex flex-col items-center gap-1 shrink-0"
       >
         <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: "#c4b8a8" }}>
