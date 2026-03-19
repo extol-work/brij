@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency, groupId } = body;
+  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency, groupId, isPrivate } = body;
 
   // "Now" mode: instant live activity with 12h auto-close
   if (mode === "now") {
@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
       shareCode: generateShareCode(),
       isRecurring: isRecurring || false,
       recurringFrequency: isRecurring ? recurringFrequency || null : null,
+      isPrivate: isPrivate || false,
     })
     .returning();
 

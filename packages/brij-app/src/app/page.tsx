@@ -612,6 +612,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [startingNow, setStartingNow] = useState(false);
   const [pastLimit, setPastLimit] = useState(10);
+  const [hideGroup, setHideGroup] = useState(false);
+  const [hidePersonal, setHidePersonal] = useState(false);
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
@@ -714,10 +716,16 @@ export default function Dashboard() {
     return tb - ta;
   };
 
-  const upcomingCreated = created.filter(isUpcoming).sort(sortByStartAsc);
-  const pastCreated = created.filter((a) => !isUpcoming(a)).sort(sortByStartDesc);
-  const upcomingAttended = attended.filter(isUpcoming).sort(sortByStartAsc);
-  const pastAttended = attended.filter((a) => !isUpcoming(a)).sort(sortByStartDesc);
+  const filterActivity = (a: Activity) => {
+    if (hideGroup && a.groupId) return false;
+    if (hidePersonal && !a.groupId) return false;
+    return true;
+  };
+
+  const upcomingCreated = created.filter(isUpcoming).filter(filterActivity).sort(sortByStartAsc);
+  const pastCreated = created.filter((a) => !isUpcoming(a)).filter(filterActivity).sort(sortByStartDesc);
+  const upcomingAttended = attended.filter(isUpcoming).filter(filterActivity).sort(sortByStartAsc);
+  const pastAttended = attended.filter((a) => !isUpcoming(a)).filter(filterActivity).sort(sortByStartDesc);
 
   const allPast = [...pastCreated, ...pastAttended].sort((a, b) => {
     const ta = a.startsAt ? new Date(a.startsAt).getTime() : 0;
@@ -730,6 +738,7 @@ export default function Dashboard() {
   const hasUpcoming = upcomingCreated.length > 0 || upcomingAttended.length > 0;
   const hasPast = allPast.length > 0;
   const hasNothing = !hasUpcoming && !hasPast;
+  const hasAnyActivities = created.length > 0 || attended.length > 0;
 
   const activeGroup = groups.find((g) => g.id === activeGroupId) || null;
 
@@ -786,7 +795,7 @@ export default function Dashboard() {
         )}
 
         {/* Activities */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold text-bark-900">
             Your Activities
           </h2>
@@ -798,8 +807,38 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* Filter toggles */}
+        {hasAnyActivities && (
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setHideGroup(!hideGroup)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                hideGroup
+                  ? "border-amber-300 bg-amber-50 text-amber-700"
+                  : "border-warm-gray-200 text-warm-gray-400 hover:border-warm-gray-300"
+              }`}
+            >
+              {hideGroup ? "Group hidden" : "Hide group"}
+            </button>
+            <button
+              onClick={() => setHidePersonal(!hidePersonal)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                hidePersonal
+                  ? "border-amber-300 bg-amber-50 text-amber-700"
+                  : "border-warm-gray-200 text-warm-gray-400 hover:border-warm-gray-300"
+              }`}
+            >
+              {hidePersonal ? "Personal hidden" : "Hide personal"}
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-warm-gray-500">Loading...</p>
+        ) : hasNothing && (hideGroup || hidePersonal) ? (
+          <div className="text-center py-12">
+            <p className="text-warm-gray-400 text-sm">All activities filtered out</p>
+          </div>
         ) : hasNothing ? (
           <div className="text-center py-16 border border-dashed border-warm-gray-200 rounded-xl">
             <p className="text-warm-gray-500 mb-4">

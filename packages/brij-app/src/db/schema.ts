@@ -178,6 +178,7 @@ export const activities = pgTable("activities", {
     .notNull(),
   groupId: uuid("group_id")
     .references(() => groups.id, { onDelete: "set null" }), // nullable — personal or group activity
+  isPrivate: boolean("is_private").default(false).notNull(),
   status: activityStatusEnum("status").default("draft").notNull(),
   startsAt: timestamp("starts_at", { withTimezone: true }),
   endsAt: timestamp("ends_at", { withTimezone: true }),

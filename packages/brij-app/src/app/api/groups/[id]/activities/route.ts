@@ -34,6 +34,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
       location: activities.location,
       closedAt: activities.closedAt,
       shareCode: activities.shareCode,
+      isPrivate: activities.isPrivate,
+      coordinatorId: activities.coordinatorId,
       attendeeCount: sql<number>`(SELECT count(*) FROM attendances WHERE activity_id = ${activities.id} AND status = 'checked_in')::int`,
     })
     .from(activities)
@@ -51,10 +53,18 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const attendanceMap = new Map(userAttendances.map((a) => [a.activityId, a.status]));
 
-  const enriched = rows.map((r) => ({
-    ...r,
-    myStatus: attendanceMap.get(r.id) || null, // null = not joined, "coming" = RSVP'd, "checked_in"
-  }));
+  const enriched = rows
+    .filter((r) => {
+      // Private events: only visible to coordinator or invited members
+      if (r.isPrivate) {
+        return r.coordinatorId === user.id || attendanceMap.has(r.id);
+      }
+      return true;
+    })
+    .map((r) => ({
+      ...r,
+      myStatus: attendanceMap.get(r.id) || null,
+    }));
 
   return NextResponse.json(enriched);
 }

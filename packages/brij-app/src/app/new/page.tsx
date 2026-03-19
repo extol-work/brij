@@ -14,6 +14,7 @@ function NewActivityInner() {
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("weekly");
+  const [isPrivate, setIsPrivate] = useState(false);
 
   if (!authenticated) {
     return (
@@ -54,6 +55,7 @@ function NewActivityInner() {
       groupId: groupId || undefined,
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
+      isPrivate: groupId ? isPrivate : false,
       startsAt: (() => {
         const date = form.get("date") as string;
         const time = parseTime((form.get("time") as string) || "");
@@ -196,6 +198,31 @@ function NewActivityInner() {
                 <option value="biweekly">Every 2 weeks</option>
                 <option value="monthly">Every month</option>
               </select>
+            </div>
+          )}
+
+          {/* Private event toggle — group events only */}
+          {groupId && (
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-bark-900">Private event</span>
+                <p className="text-xs text-warm-gray-400">Only invited members can see this event</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isPrivate}
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isPrivate ? "bg-terracotta-500" : "bg-warm-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isPrivate ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
           )}
 
