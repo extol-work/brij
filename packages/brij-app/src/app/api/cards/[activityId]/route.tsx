@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { activities, attendances, users, groups } from "@/db/schema";
+import { activities, attendances, users } from "@/db/schema";
 import { eq, and, lte, ne, inArray, sql } from "drizzle-orm";
 import { selectBackground, getBackgroundUrl, CATEGORY_GRADIENTS, getCategory } from "@/lib/card-backgrounds";
 import QRCode from "qrcode";
