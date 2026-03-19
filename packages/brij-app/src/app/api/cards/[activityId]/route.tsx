@@ -452,7 +452,7 @@ export async function GET(
                 gap: "16px",
                 fontSize: "52px",
                 fontWeight: 500,
-                opacity: 0.6,
+                opacity: 0.45,
               }}
             >
               <img
@@ -464,9 +464,9 @@ export async function GET(
             </div>
             <div
               style={{
-                fontSize: "42px",
+                fontSize: "36px",
                 fontWeight: 500,
-                opacity: 0.45,
+                opacity: 0.35,
                 letterSpacing: "0.02em",
                 marginTop: "4px",
               }}
