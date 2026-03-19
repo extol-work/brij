@@ -127,6 +127,7 @@ export const groups = pgTable("groups", {
     .references(() => users.id)
     .notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 // --- Group Memberships ---

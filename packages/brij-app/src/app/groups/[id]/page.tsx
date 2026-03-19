@@ -551,6 +551,9 @@ export default function GroupDetailPage() {
           <div className="space-y-8">
             <EditGroupForm group={group} onUpdated={(g) => setGroup({ ...group, ...g })} />
             <GroupExport groupId={group.id} groupName={group.name} />
+            {session?.user?.id === group.createdById && (
+              <DeleteGroup groupId={group.id} groupName={group.name} onDeleted={() => router.push("/")} />
+            )}
           </div>
         )}
       </div>
@@ -1002,6 +1005,80 @@ function EditGroupForm({
         {saved ? "Saved!" : saving ? "Saving..." : "Save changes"}
       </button>
     </form>
+  );
+}
+
+function DeleteGroup({ groupId, groupName, onDeleted }: { groupId: string; groupName: string; onDeleted: () => void }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!showConfirm) {
+    return (
+      <div>
+        <h3 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Danger Zone</h3>
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="w-full py-2.5 bg-red-700 text-white rounded-xl text-sm font-semibold hover:bg-red-800 transition-colors"
+        >
+          Delete group
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-red-600 uppercase tracking-wide mb-3">Delete Group</h3>
+      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+        <p className="text-sm text-red-800 font-medium mb-2">This will permanently delete &ldquo;{groupName}&rdquo;</p>
+        <p className="text-xs text-red-600 mb-3 leading-relaxed">
+          All members will be removed. Journal entries and activities will be preserved but inaccessible. On-chain attestations remain. This cannot be undone.
+        </p>
+        <p className="text-xs text-red-600 mb-3">
+          Type <strong>{groupName}</strong> to confirm:
+        </p>
+        <input
+          type="text"
+          value={confirmName}
+          onChange={(e) => setConfirmName(e.target.value)}
+          placeholder={groupName}
+          className="w-full px-3 py-2 border border-red-200 rounded-lg text-base text-bark-900 mb-3 focus:outline-none focus:ring-2 focus:ring-red-400"
+        />
+        {error && <p className="text-xs text-red-700 mb-3">{error}</p>}
+        <div className="flex gap-3">
+          <button
+            onClick={async () => {
+              setDeleting(true);
+              setError("");
+              const res = await fetch(`/api/groups/${groupId}/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ confirmName }),
+              });
+              if (res.ok) {
+                onDeleted();
+              } else {
+                const data = await res.json();
+                setError(data.error || "Failed to delete");
+                setDeleting(false);
+              }
+            }}
+            disabled={deleting || confirmName !== groupName}
+            className="px-4 py-2 bg-red-700 text-white rounded-lg text-sm font-semibold hover:bg-red-800 disabled:opacity-50"
+          >
+            {deleting ? "Deleting..." : "Delete forever"}
+          </button>
+          <button
+            onClick={() => { setShowConfirm(false); setConfirmName(""); setError(""); }}
+            className="px-4 py-2 text-sm text-warm-gray-500"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { db } from "@/db";
 import { groups, groupMemberships } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { pushGroupCreated } from "@/lib/cortex";
 
 /** GET /api/groups — list groups the user belongs to */
@@ -22,7 +22,7 @@ export async function GET() {
     })
     .from(groupMemberships)
     .innerJoin(groups, eq(groups.id, groupMemberships.groupId))
-    .where(and(eq(groupMemberships.userId, user.id), eq(groupMemberships.status, "active")))
+    .where(and(eq(groupMemberships.userId, user.id), eq(groupMemberships.status, "active"), isNull(groups.deletedAt)))
     .orderBy(desc(groupMemberships.joinedAt));
 
   return NextResponse.json(rows);
