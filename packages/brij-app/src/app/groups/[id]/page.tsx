@@ -556,6 +556,9 @@ export default function GroupDetailPage() {
             )}
           </div>
         )}
+
+        {/* Bottom spacer for scroll breathing room */}
+        <div className="h-16" />
       </div>
     </div>
   );
@@ -649,9 +652,11 @@ function CollapsedDay({
 function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupActivity[]; groupId: string; isCoordinator: boolean }) {
   const upcoming = activities.filter((a) => a.status === "open" || a.status === "draft");
   const past = activities.filter((a) => a.status === "closed");
+  const [pastLimit, setPastLimit] = useState(10);
+  const visiblePast = past.slice(0, pastLimit);
 
   return (
-    <div>
+    <div className="pb-8">
       {isCoordinator && (
         <div className="flex justify-end mb-4">
           <a
@@ -686,7 +691,7 @@ function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupAc
         <div>
           <p className="text-xs font-semibold text-warm-gray-500 uppercase tracking-wide mb-2">Past</p>
           <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
-            {past.map((a) => (
+            {visiblePast.map((a) => (
               <a key={a.id} href={`/activity/${a.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-cream/50 transition-colors">
                 <div>
                   <p className="text-sm font-medium text-bark-900">{a.title}</p>
@@ -700,6 +705,14 @@ function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupAc
               </a>
             ))}
           </div>
+          {past.length > pastLimit && (
+            <button
+              onClick={() => setPastLimit((l) => l + 10)}
+              className="w-full mt-3 py-2.5 text-sm font-medium text-warm-gray-500 hover:text-bark-900 transition-colors"
+            >
+              Show more ({past.length - pastLimit} remaining)
+            </button>
+          )}
         </div>
       )}
 
