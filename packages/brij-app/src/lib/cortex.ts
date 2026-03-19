@@ -9,10 +9,15 @@ async function pushToCortex(path: string, body: Record<string, unknown>): Promis
   const cortexUrl = process.env.CORTEX_URL;
   if (!cortexUrl) return;
 
+  const apiKey = process.env.CORTEX_API_KEY;
+
   try {
     await fetch(`${cortexUrl}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
       body: JSON.stringify(body),
     });
   } catch {

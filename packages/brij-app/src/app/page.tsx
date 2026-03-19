@@ -246,7 +246,7 @@ function GroupSwitcher({
           <div className="w-[52px] h-[52px] rounded-full bg-warm-gray-200 flex items-center justify-center text-sm font-bold text-warm-gray-500">
             +{overflow}
           </div>
-          <span className="text-[11px] text-warm-gray-400">more</span>
+          <span className="text-[11px] text-warm-gray-400 max-w-[60px] text-center truncate">more</span>
         </Link>
       )}
 
@@ -258,6 +258,7 @@ function GroupSwitcher({
         <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: "#c4b8a8" }}>
           <span className="text-2xl leading-none text-white font-bold">+</span>
         </div>
+        <span className="text-[11px] text-transparent">.</span>
       </Link>
     </div>
   );
