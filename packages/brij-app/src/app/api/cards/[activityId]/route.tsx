@@ -460,10 +460,10 @@ export async function GET(
                   width: "32px",
                   height: "32px",
                   borderRadius: "50%",
-                  border: `4px solid ${TEXT_COLOR}80`,
+                  background: `${TEXT_COLOR}`,
                 }}
               />
-              Recorded on brij
+              Verified on Solana
             </div>
             <div
               style={{
@@ -474,7 +474,7 @@ export async function GET(
                 marginTop: "4px",
               }}
             >
-              extol.work
+              brij.extol.work
             </div>
           </div>
 
