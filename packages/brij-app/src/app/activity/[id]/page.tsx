@@ -985,18 +985,20 @@ export default function ActivityDetail() {
               ))}
             </div>
 
-            {/* Text field with character countdown */}
+            {/* Text field with soft character guide */}
             <div className="relative mb-4">
               <textarea
                 value={closureText}
-                onChange={(e) => { if (e.target.value.length <= 120) setClosureText(e.target.value); }}
+                onChange={(e) => setClosureText(e.target.value)}
                 placeholder="What happened? (optional)"
                 rows={3}
                 className="w-full px-3 py-3 border border-warm-gray-200 rounded-xl text-base focus:outline-none focus:border-violet-400 resize-none"
               />
-              <span className={`absolute bottom-2 right-3 text-xs ${closureText.length > 100 ? "text-amber-500" : "text-warm-gray-300"} ${closureText.length >= 120 ? "text-red-500 font-semibold" : ""}`}>
-                {120 - closureText.length}
-              </span>
+              {closureText.length > 0 && (
+                <span className={`absolute bottom-2 right-3 text-xs ${closureText.length <= 120 ? "text-warm-gray-300" : "text-amber-500"}`}>
+                  {closureText.length <= 120 ? 120 - closureText.length : `${closureText.length - 120} over card limit`}
+                </span>
+              )}
             </div>
 
             {/* Submit */}
