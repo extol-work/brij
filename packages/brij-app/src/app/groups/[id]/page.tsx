@@ -33,7 +33,9 @@ interface GroupActivity {
   startsAt: string | null;
   location: string | null;
   closedAt: string | null;
+  shareCode: string;
   attendeeCount: number;
+  myStatus: string | null;
 }
 
 interface ExpenseEntry {
@@ -257,7 +259,7 @@ export default function GroupDetailPage() {
         </div>
 
         {tab === "events" && (
-          <EventsTab activities={groupActivities} groupId={group.id} isCoordinator={isCoordinator} />
+          <EventsTab activities={groupActivities} groupId={group.id} isCoordinator={isCoordinator} onActivityUpdated={(updated) => setGroupActivities((prev) => prev.map((a) => a.id === updated.id ? { ...a, ...updated } : a))} />
         )}
 
         {tab === "journal" && (
@@ -649,11 +651,23 @@ function CollapsedDay({
   );
 }
 
-function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupActivity[]; groupId: string; isCoordinator: boolean }) {
+function EventsTab({ activities, groupId, isCoordinator, onActivityUpdated }: { activities: GroupActivity[]; groupId: string; isCoordinator: boolean; onActivityUpdated: (a: Partial<GroupActivity> & { id: string }) => void }) {
   const upcoming = activities.filter((a) => a.status === "open" || a.status === "draft");
   const past = activities.filter((a) => a.status === "closed");
   const [pastLimit, setPastLimit] = useState(10);
   const visiblePast = past.slice(0, pastLimit);
+
+  async function handleAction(activityId: string, action: "rsvp" | "checkin") {
+    const res = await fetch(`/api/groups/${groupId}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ activityId, action }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      onActivityUpdated({ id: activityId, myStatus: data.status });
+    }
+  }
 
   return (
     <div className="pb-8">
@@ -672,16 +686,34 @@ function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupAc
           <p className="text-xs font-semibold text-warm-gray-500 uppercase tracking-wide mb-2">Upcoming</p>
           <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
             {upcoming.map((a) => (
-              <a key={a.id} href={`/activity/${a.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-cream/50 transition-colors">
-                <div>
+              <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                <a href={`/activity/${a.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                   <p className="text-sm font-medium text-bark-900">{a.title}</p>
                   <p className="text-xs text-warm-gray-400">
                     {a.startsAt ? new Date(a.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date"}
                     {a.location && ` · ${a.location}`}
                   </p>
+                </a>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  {a.myStatus === "checked_in" ? (
+                    <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Checked in</span>
+                  ) : a.myStatus === "coming" ? (
+                    <button
+                      onClick={() => handleAction(a.id, "checkin")}
+                      className="text-xs px-3 py-1 rounded-full bg-violet-600 text-white font-semibold hover:bg-violet-700"
+                    >
+                      Check in
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAction(a.id, "rsvp")}
+                      className="text-xs px-3 py-1 rounded-full border border-violet-300 text-violet-600 font-semibold hover:bg-violet-50"
+                    >
+                      Join
+                    </button>
+                  )}
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">{a.status}</span>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -701,7 +733,12 @@ function EventsTab({ activities, groupId, isCoordinator }: { activities: GroupAc
                     {a.attendeeCount > 0 && ` · ${a.attendeeCount} attended`}
                   </p>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-warm-gray-100 text-warm-gray-500">Done</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {a.myStatus === "checked_in" && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600">You attended</span>
+                  )}
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-warm-gray-100 text-warm-gray-500">Done</span>
+                </div>
               </a>
             ))}
           </div>
