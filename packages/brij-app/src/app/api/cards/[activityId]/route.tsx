@@ -456,8 +456,8 @@ export async function GET(
               }}
             >
               <div style={{ display: "flex", position: "relative", width: "40px", height: "40px" }}>
-                <div style={{ width: "20px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "8px", left: "2px", transform: "rotate(-45deg)" }} />
-                <div style={{ width: "20px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "18px", left: "14px", transform: "rotate(-45deg)" }} />
+                <div style={{ width: "22px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "18px", left: "1px", transform: "rotate(45deg)" }} />
+                <div style={{ width: "22px", height: "12px", borderRadius: "6px", border: `3px solid ${TEXT_COLOR}`, position: "absolute", top: "10px", left: "12px", transform: "rotate(45deg)" }} />
               </div>
               Verified on Solana
             </div>
@@ -474,24 +474,24 @@ export async function GET(
             </div>
           </div>
 
-          {/* QR code — 300px for reliable camera scanning */}
+          {/* QR code — 270px (10% smaller) */}
           <div
             style={{
-              width: "300px",
-              height: "300px",
+              width: "270px",
+              height: "270px",
               flexShrink: 0,
               background: "rgba(255,255,255,0.12)",
-              borderRadius: "28px",
+              borderRadius: "24px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "14px",
+              padding: "12px",
             }}
           >
             <img
               src={qrDataUrl}
-              width={272}
-              height={272}
+              width={246}
+              height={246}
               style={{ borderRadius: "14px" }}
             />
           </div>
