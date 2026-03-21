@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
+import { BrijLogo } from "@/components/brij-logo";
 import Link from "next/link";
 import { firstName, initial } from "@/lib/names";
 import { saveCheckinOffline, syncPendingCheckins } from "@/lib/offline-checkin";
@@ -189,7 +190,7 @@ function JoinActivityInner() {
       <div className="min-h-screen">
         <header className="border-b border-warm-gray-200">
           <div className="max-w-md mx-auto px-6 py-4">
-            <span className="text-2xl font-bold text-bark-900">brij</span><span className="text-base text-warm-gray-400 font-light ml-1.5">by Extol</span>
+            <BrijLogo />
           </div>
         </header>
         <div className="flex items-center justify-center" style={{ minHeight: "calc(100vh - 65px)" }}>
@@ -282,7 +283,7 @@ function JoinActivityInner() {
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-md mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-2xl font-bold text-bark-900">brij</span><span className="text-base text-warm-gray-400 font-light ml-1.5">by Extol</span>
+          <BrijLogo />
           {live && (
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full uppercase tracking-wide">
               <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse" />

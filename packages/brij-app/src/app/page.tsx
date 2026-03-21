@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { identifyUser, track } from "@/lib/posthog";
 import { getLocation } from "@/lib/geolocation";
+import { BrijLogo } from "@/components/brij-logo";
 
 interface Activity {
   id: string;
@@ -655,7 +656,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex flex-col">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-[500px] mx-auto px-6 py-8 md:py-16">
-            <h1 className="text-7xl font-bold text-bark-900 mb-2">brij</h1>
+            <div className="mb-2"><BrijLogo variant="hero" /></div>
             <p className="text-2xl text-warm-gray-500 mb-8">
               Build History Together
             </p>
@@ -749,7 +750,7 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-baseline gap-1.5"><span className="text-2xl font-bold text-bark-900">brij</span><span className="text-base text-warm-gray-400 font-light">by Extol</span></div>
+          <BrijLogo />
           <div className="flex items-center gap-4">
             <Link href="/settings" className="text-sm text-warm-gray-500 hover:text-bark-900 transition-colors">
               {maskEmail(session?.user?.email || "Signed in")}

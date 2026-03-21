@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { BrijLogo } from "@/components/brij-logo";
 import QRCode from "react-qr-code";
 import { firstName, initial } from "@/lib/names";
 import { resizeImage } from "@/lib/resize-image";
@@ -423,7 +424,7 @@ export default function ActivityDetail() {
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-2xl mx-auto px-6 py-4">
-          <span className="text-2xl font-bold text-bark-900">brij</span><span className="text-base text-warm-gray-400 font-light ml-1.5">by Extol</span>
+          <BrijLogo />
         </div>
       </header>
 

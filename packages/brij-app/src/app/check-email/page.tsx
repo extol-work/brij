@@ -1,10 +1,11 @@
+import { BrijLogo } from "@/components/brij-logo";
+
 export default function CheckEmail() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center max-w-sm px-6">
         <div className="mb-3">
-          <h1 className="text-5xl font-bold text-bark-900">brij</h1>
-          <p className="text-lg text-warm-gray-400 font-light">by Extol</p>
+          <BrijLogo variant="hero" />
         </div>
         <h2 className="text-xl font-semibold text-bark-900 mb-3">
           Check your email

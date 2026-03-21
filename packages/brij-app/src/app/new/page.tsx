@@ -3,6 +3,7 @@
 import { useSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
+import { BrijLogo } from "@/components/brij-logo";
 
 function NewActivityInner() {
   const { status } = useSession();
@@ -89,7 +90,7 @@ function NewActivityInner() {
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-2xl mx-auto px-6 py-4">
-          <span className="text-2xl font-bold text-bark-900">brij</span><span className="text-base text-warm-gray-400 font-light ml-1.5">by Extol</span>
+          <BrijLogo />
         </div>
       </header>
 

@@ -27,3 +27,11 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* brij logo byline */
+.brij-byline {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: 400;
+  color: #aaa;
+  letter-spacing: 0.12em;
+}
