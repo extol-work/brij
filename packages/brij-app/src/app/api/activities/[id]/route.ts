@@ -108,7 +108,7 @@ export async function PATCH(
         groupId: existing.groupId,
         status: "open",
         startsAt: nextDate,
-        endsAt: null,
+        endsAt: new Date(nextDate.getTime() + 24 * 60 * 60 * 1000),
         location: existing.location,
         shareCode: generateShareCode(),
         isRecurring: true,

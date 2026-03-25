@@ -655,7 +655,7 @@ export default function ActivityDetail() {
             <span className="text-lg shrink-0">⏱</span>
             <div>
               <p className="text-sm font-semibold">This activity closes in {timeUntil(activity.endsAt)}</p>
-              <p className="text-xs mt-0.5">After 12 hours, it&apos;ll close automatically.</p>
+              <p className="text-xs mt-0.5">After 24 hours, it&apos;ll close automatically.</p>
             </div>
           </div>
         )}

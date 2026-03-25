@@ -3,13 +3,27 @@ import { db } from "@/db";
 import { activities, attendances, groups } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
-import { eq, or, sql } from "drizzle-orm";
+import { eq, or, and, sql } from "drizzle-orm";
 
 export async function GET() {
   const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Auto-close stale activities before listing
+  const now = new Date();
+  await db
+    .update(activities)
+    .set({ status: "closed", closedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(activities.coordinatorId, user.id),
+        eq(activities.status, "open"),
+        sql`${activities.endsAt} IS NOT NULL`,
+        sql`${activities.endsAt} < ${now}`,
+      )
+    );
 
   // Activities I created
   const created = await db.query.activities.findMany({
@@ -86,7 +100,7 @@ export async function POST(req: NextRequest) {
   // "Now" mode: instant live activity with 12h auto-close
   if (mode === "now") {
     const now = new Date();
-    const autoClose = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+    const autoClose = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const [activity] = await db
       .insert(activities)
@@ -125,7 +139,7 @@ export async function POST(req: NextRequest) {
       groupId: groupId || null,
       status: "open",
       startsAt: startsAt ? new Date(startsAt) : null,
-      endsAt: endsAt ? new Date(endsAt) : null,
+      endsAt: endsAt ? new Date(endsAt) : (startsAt ? new Date(new Date(startsAt).getTime() + 24 * 60 * 60 * 1000) : null),
       location: location || null,
       shareCode: generateShareCode(),
       isRecurring: isRecurring || false,
