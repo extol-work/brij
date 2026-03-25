@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extol Card Parallax — Card Format</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; color: #faf7f2; font-family: system-ui, sans-serif; }
+  h1 { text-align: center; padding: 32px 0 8px; font-size: 22px; font-weight: 300; letter-spacing: 0.05em; }
+  .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 32px; }
+
+  .cards-row {
+    display: flex;
+    gap: 24px;
+    padding: 0 32px 64px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .card-group {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .card-group-title {
+    font-size: 14px;
+    color: #aaa;
+    font-family: monospace;
+    text-align: center;
+  }
+
+  .card-pair {
+    display: flex;
+    gap: 16px;
+  }
+
+  .card-slot {
+    width: 270px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #222;
+    border: 1px solid #333;
+    position: relative;
+  }
+  .card-slot img, .card-slot video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .card-label {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    font-size: 11px;
+    color: #fff;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .depth-slot {
+    width: 135px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #222;
+    border: 1px solid #333;
+  }
+  .depth-slot img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .trio {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+</style>
+</head>
+<body>
+
+<h1>Extol Card — Static vs Parallax</h1>
+<p class="subtitle">Scroll horizontally. Videos loop automatically.</p>
+
+<div class="cards-row" id="cards-row"></div>
+
+<script>
+async function main() {
+  const res = await fetch('cards/manifest.json');
+  const manifest = await res.json();
+  const row = document.getElementById('cards-row');
+
+  manifest.forEach(item => {
+    const group = document.createElement('div');
+    group.className = 'card-group';
+    group.innerHTML = `
+      <div class="card-group-title">${item.title}</div>
+      <div class="trio">
+        <div class="card-slot">
+          <img src="${item.static}" alt="Static card">
+          <div class="card-label">Static PNG</div>
+        </div>
+        <div class="card-slot">
+          <video src="${item.video}" autoplay loop muted playsinline></video>
+          <div class="card-label">Parallax MP4</div>
+        </div>
+        <div class="depth-slot">
+          <img src="${item.depth}" alt="Depth map">
+        </div>
+      </div>
+    `;
+    row.appendChild(group);
+  });
+}
+main();
+</script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extol Card Parallax Experiment</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a1a; color: #faf7f2; font-family: system-ui, sans-serif; }
+  h1 { text-align: center; padding: 32px 0 8px; font-size: 24px; font-weight: 300; letter-spacing: 0.05em; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 32px; }
+
+  .controls {
+    display: flex; justify-content: center; gap: 16px; padding: 0 24px 32px;
+    flex-wrap: wrap;
+  }
+  .controls label { font-size: 13px; color: #aaa; display: flex; align-items: center; gap: 6px; }
+  .controls input[type="range"] { width: 120px; }
+  .controls span.val { color: #faf7f2; font-variant-numeric: tabular-nums; min-width: 32px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 32px;
+    padding: 0 32px 64px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #222;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #333;
+  }
+  .card-title {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #aaa;
+    border-bottom: 1px solid #333;
+    font-family: monospace;
+  }
+
+  .views {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: #333;
+  }
+
+  .view {
+    position: relative;
+    overflow: hidden;
+    background: #111;
+  }
+  .view img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .view-label {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 11px;
+    color: #fff;
+    background: rgba(0,0,0,0.6);
+    padding: 2px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* Parallax canvas container */
+  .parallax-wrap {
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+  }
+  .parallax-wrap canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<h1>Extol Card Parallax Experiment</h1>
+<p class="subtitle">Move your mouse over the parallax view. Depth Anything V2.</p>
+
+<div class="controls">
+  <label>
+    Displacement
+    <input type="range" id="displacement" min="5" max="80" value="30">
+    <span class="val" id="displacement-val">30</span>px
+  </label>
+  <label>
+    Depth blur
+    <input type="range" id="blur" min="0" max="8" value="2" step="0.5">
+    <span class="val" id="blur-val">2</span>px
+  </label>
+  <label>
+    Focus depth
+    <input type="range" id="focus" min="0" max="255" value="128">
+    <span class="val" id="focus-val">128</span>
+  </label>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const state = {
+  displacement: 30,
+  blur: 2,
+  focus: 128,
+  cards: [],
+};
+
+// Slider bindings
+['displacement', 'blur', 'focus'].forEach(id => {
+  const el = document.getElementById(id);
+  const val = document.getElementById(id + '-val');
+  el.addEventListener('input', () => {
+    state[id] = parseFloat(el.value);
+    val.textContent = el.value;
+  });
+});
+
+async function loadManifest() {
+  const res = await fetch('manifest.json');
+  return res.json();
+}
+
+function createCard(item) {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  card.innerHTML = `
+    <div class="card-title">${item.name}</div>
+    <div class="views">
+      <div class="view">
+        <img src="${item.src}" alt="Original">
+        <div class="view-label">Original</div>
+      </div>
+      <div class="view">
+        <img src="${item.depth}" alt="Depth map">
+        <div class="view-label">Depth Map</div>
+      </div>
+      <div class="parallax-wrap" data-src="${item.src}" data-depth="${item.depth}">
+        <canvas></canvas>
+        <div class="view-label">Parallax — move mouse</div>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+function initParallax(wrap) {
+  const canvas = wrap.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const srcImg = new Image();
+  const depthImg = new Image();
+
+  let loaded = 0;
+  let srcData, depthData, w, h;
+
+  function onLoad() {
+    loaded++;
+    if (loaded < 2) return;
+
+    w = srcImg.width;
+    h = srcImg.height;
+    canvas.width = w;
+    canvas.height = h;
+
+    // Extract pixel data
+    const tmpCanvas = document.createElement('canvas');
+    const tmpCtx = tmpCanvas.getContext('2d');
+    tmpCanvas.width = w;
+    tmpCanvas.height = h;
+
+    tmpCtx.drawImage(srcImg, 0, 0, w, h);
+    srcData = tmpCtx.getImageData(0, 0, w, h);
+
+    tmpCtx.drawImage(depthImg, 0, 0, w, h);
+    depthData = tmpCtx.getImageData(0, 0, w, h);
+
+    // Initial render (centered)
+    render(0, 0);
+
+    // Mouse tracking
+    wrap.addEventListener('mousemove', (e) => {
+      const rect = wrap.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / rect.width * 2 - 1;  // -1 to 1
+      const my = (e.clientY - rect.top) / rect.height * 2 - 1;
+      render(mx, my);
+    });
+
+    wrap.addEventListener('mouseleave', () => render(0, 0));
+  }
+
+  function render(mx, my) {
+    if (!srcData) return;
+
+    const disp = state.displacement;
+    const out = ctx.createImageData(w, h);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        // Depth: 0 = far, 255 = near
+        const depth = depthData.data[i]; // R channel
+        const normalizedDepth = depth / 255;
+
+        // Displacement based on depth and mouse position
+        const dx = Math.round(mx * disp * normalizedDepth);
+        const dy = Math.round(my * disp * normalizedDepth);
+
+        // Sample from source with displacement
+        const sx = Math.min(Math.max(x - dx, 0), w - 1);
+        const sy = Math.min(Math.max(y - dy, 0), h - 1);
+        const si = (sy * w + sx) * 4;
+
+        out.data[i]     = srcData.data[si];
+        out.data[i + 1] = srcData.data[si + 1];
+        out.data[i + 2] = srcData.data[si + 2];
+        out.data[i + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(out, 0, 0);
+  }
+
+  srcImg.onload = onLoad;
+  depthImg.onload = onLoad;
+  srcImg.src = wrap.dataset.src;
+  depthImg.src = wrap.dataset.depth;
+}
+
+async function main() {
+  const manifest = await loadManifest();
+  const grid = document.getElementById('grid');
+
+  manifest.forEach(item => {
+    const card = createCard(item);
+    grid.appendChild(card);
+
+    // Init parallax after DOM insert
+    requestAnimationFrame(() => {
+      const wrap = card.querySelector('.parallax-wrap');
+      initParallax(wrap);
+    });
+  });
+}
+
+main();
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+[
+  {
+    "name": "E1-study",
+    "src": "output/E1-study.jpg",
+    "depth": "depth-maps/E1-study_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "C1-garden-rows",
+    "src": "output/C1-garden-rows.jpg",
+    "depth": "depth-maps/C1-garden-rows_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "F3-path",
+    "src": "output/F3-path.jpg",
+    "depth": "depth-maps/F3-path_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "F2-candles",
+    "src": "output/F2-candles.jpg",
+    "depth": "depth-maps/F2-candles_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "S1-morning-field",
+    "src": "output/S1-morning-field.jpg",
+    "depth": "depth-maps/S1-morning-field_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "C3-mural-wall",
+    "src": "output/C3-mural-wall.jpg",
+    "depth": "depth-maps/C3-mural-wall_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "M2-music-corner",
+    "src": "output/M2-music-corner.jpg",
+    "depth": "depth-maps/M2-music-corner_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "C2-supplies",
+    "src": "output/C2-supplies.jpg",
+    "depth": "depth-maps/C2-supplies_depth.png",
+    "width": 687,
+    "height": 1024
+  },
+  {
+    "name": "crusading-nyc-community-garden-group-turns-30-20",
+    "src": "output/crusading-nyc-community-garden-group-turns-30-20.jpg",
+    "depth": "depth-maps/crusading-nyc-community-garden-group-turns-30-20_depth.png",
+    "width": 1024,
+    "height": 682
+  },
+  {
+    "name": "Gemini_Generated_Image_ux31yiux31yiux31",
+    "src": "output/Gemini_Generated_Image_ux31yiux31yiux31.jpg",
+    "depth": "depth-maps/Gemini_Generated_Image_ux31yiux31yiux31_depth.png",
+    "width": 571,
+    "height": 1024
+  },
+  {
+    "name": "Mt+Narra+20190714-2",
+    "src": "output/Mt+Narra+20190714-2.jpg",
+    "depth": "depth-maps/Mt+Narra+20190714-2_depth.png",
+    "width": 819,
+    "height": 1024
+  },
+  {
+    "name": "surf-terrain-ref-image-portrait",
+    "src": "output/surf-terrain-ref-image-portrait.jpg",
+    "depth": "depth-maps/surf-terrain-ref-image-portrait_depth.png",
+    "width": 458,
+    "height": 1024
+  },
+  {
+    "name": "istockphoto-people",
+    "src": "output/istockphoto-people.jpg",
+    "depth": "depth-maps/istockphoto-people_depth.png",
+    "width": 1024,
+    "height": 682
+  }
+]

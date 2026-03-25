@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { activities, attendances, groups } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
-import { eq, or, and, sql } from "drizzle-orm";
+import { eq, or, and, lt, isNotNull, sql } from "drizzle-orm";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -13,17 +13,21 @@ export async function GET() {
 
   // Auto-close stale activities before listing
   const now = new Date();
-  await db
-    .update(activities)
-    .set({ status: "closed", closedAt: now, updatedAt: now })
-    .where(
-      and(
-        eq(activities.coordinatorId, user.id),
-        eq(activities.status, "open"),
-        sql`${activities.endsAt} IS NOT NULL`,
-        sql`${activities.endsAt} < ${now}`,
-      )
-    );
+  try {
+    await db
+      .update(activities)
+      .set({ status: "closed", closedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(activities.coordinatorId, user.id),
+          eq(activities.status, "open"),
+          isNotNull(activities.endsAt),
+          lt(activities.endsAt, now),
+        )
+      );
+  } catch {
+    // Don't let sweep failure break the dashboard
+  }
 
   // Activities I created
   const created = await db.query.activities.findMany({
