@@ -33,7 +33,7 @@ function getClientIp(req: NextRequest): string {
   );
 }
 
-export async function proxy(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   // Only rate limit API routes
