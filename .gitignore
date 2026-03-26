@@ -36,3 +36,8 @@ packages/brij-app/drizzle/meta/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Parallax experiment (local only)
+experiments/parallax-cards/depth-maps/
+experiments/parallax-cards/output/
+experiments/parallax-cards/cards/
+experiments/parallax-cards/manifest.json
