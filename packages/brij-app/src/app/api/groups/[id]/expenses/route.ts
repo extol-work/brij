@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { expenseEntries, expenseConfirmations, groupMemberships, users } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { pushExpenseConfirmed } from "@/lib/cortex";
+import { validateExpenseAmount, truncate, limits } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -89,13 +90,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!description || !amount || !date) {
     return NextResponse.json({ error: "description, amount, and date required" }, { status: 400 });
   }
+  const amountErr = validateExpenseAmount(amount);
+  if (amountErr) return NextResponse.json({ error: amountErr }, { status: 400 });
 
   const [entry] = await db
     .insert(expenseEntries)
     .values({
       groupId,
       authorId: user.id,
-      description: description.trim(),
+      description: truncate(String(description), limits.MAX_EXPENSE_DESC),
       amount: amount.toString(),
       currency: currency || "USD",
       date,

@@ -4,6 +4,7 @@ import { activities, attendances, groups } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
 import { eq, or, and, lt, isNotNull, sql } from "drizzle-orm";
+import { validateText, truncate, limits } from "@/lib/validate";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -133,6 +134,10 @@ export async function POST(req: NextRequest) {
   if (!title) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
+  const titleErr = validateText(title, "Title", limits.MAX_TITLE);
+  if (titleErr) return NextResponse.json({ error: titleErr }, { status: 400 });
+  const descErr = validateText(description, "Description", limits.MAX_DESCRIPTION);
+  if (descErr) return NextResponse.json({ error: descErr }, { status: 400 });
 
   const [activity] = await db
     .insert(activities)

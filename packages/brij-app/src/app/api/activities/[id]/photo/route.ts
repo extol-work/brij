@@ -28,6 +28,18 @@ export async function POST(
     return NextResponse.json({ error: "No photo provided" }, { status: 400 });
   }
 
+  // Validate file size (5MB max)
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json({ error: "File too large (5MB max)" }, { status: 400 });
+  }
+
+  // Validate MIME type
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return NextResponse.json({ error: "Invalid file type (JPEG, PNG, or WebP only)" }, { status: 400 });
+  }
+
   // Delete old photo if replacing
   if (activity.photoUrl) {
     try {

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { activities, attendances, users } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
+import { truncate, limits } from "@/lib/validate";
 
 // GET: look up activity by share code (public, no auth required)
 export async function GET(
@@ -63,7 +64,8 @@ export async function POST(
   }
 
   const body = await req.json();
-  const { guestName, checkin, latitude, longitude } = body;
+  const { guestName: rawGuestName, checkin, latitude, longitude } = body;
+  const guestName = rawGuestName ? truncate(String(rawGuestName), limits.MAX_NAME) : null;
   const status = checkin ? "checked_in" : "coming";
 
   const authUser = await getAuthUser();
