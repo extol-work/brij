@@ -54,12 +54,13 @@ export async function checkRateLimit(
 
   try {
     const identifier = key || getIp(req);
-    const { success } = await limiter.limit(identifier);
+    const { success, remaining } = await limiter.limit(identifier);
+    console.log(`[rate-limit] ${tier} key=${identifier} success=${success} remaining=${remaining}`);
     if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
   } catch (err) {
-    console.error("[rate-limit] error:", err);
+    console.error("[rate-limit] error:", String(err));
     // Fail open
   }
 
