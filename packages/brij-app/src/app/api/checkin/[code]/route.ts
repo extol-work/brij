@@ -4,12 +4,16 @@ import { activities, attendances, users } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
 import { truncate, limits } from "@/lib/validate";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // GET: look up activity by share code (public, no auth required)
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const limited = await checkRateLimit(req, "public");
+  if (limited) return limited;
+
   const { code } = await params;
   const activity = await db.query.activities.findFirst({
     where: eq(activities.shareCode, code),
@@ -54,6 +58,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const limited = await checkRateLimit(req, "public");
+  if (limited) return limited;
+
   const { code } = await params;
   const activity = await db.query.activities.findFirst({
     where: eq(activities.shareCode, code),

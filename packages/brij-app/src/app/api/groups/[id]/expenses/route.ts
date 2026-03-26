@@ -5,6 +5,7 @@ import { expenseEntries, expenseConfirmations, groupMemberships, users } from "@
 import { eq, and, desc } from "drizzle-orm";
 import { pushExpenseConfirmed } from "@/lib/cortex";
 import { validateExpenseAmount, truncate, limits } from "@/lib/validate";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -66,6 +67,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 /** POST /api/groups/:id/expenses — create an expense entry (coordinator only) */
 export async function POST(req: NextRequest, { params }: Params) {
+  const limited = await checkRateLimit(req, "write");
+  if (limited) return limited;
+
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

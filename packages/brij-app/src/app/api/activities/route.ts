@@ -5,8 +5,12 @@ import { getAuthUser } from "@/lib/auth";
 import { generateShareCode } from "@/lib/share-code";
 import { eq, or, and, lt, isNotNull, sql } from "drizzle-orm";
 import { validateText, truncate, limits } from "@/lib/validate";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(req, "auth");
+  if (limited) return limited;
+
   const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -94,6 +98,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(req, "write");
+  if (limited) return limited;
+
   const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
