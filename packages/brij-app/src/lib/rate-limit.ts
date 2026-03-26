@@ -13,7 +13,6 @@ function init() {
   try {
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-    console.log(`[rate-limit] init: url=${url ? 'set' : 'MISSING'}, token=${token ? 'set' : 'MISSING'}`);
     if (!url || !token) return;
     const redis = new Redis({ url, token });
     publicLimit = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, "60 s"), prefix: "rl:pub" });
@@ -54,13 +53,11 @@ export async function checkRateLimit(
 
   try {
     const identifier = key || getIp(req);
-    const { success, remaining } = await limiter.limit(identifier);
-    console.log(`[rate-limit] ${tier} key=${identifier} success=${success} remaining=${remaining}`);
+    const { success } = await limiter.limit(identifier);
     if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
-  } catch (err) {
-    console.error("[rate-limit] error:", String(err));
+  } catch {
     // Fail open
   }
 
