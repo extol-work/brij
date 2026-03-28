@@ -58,6 +58,24 @@ export function pushMilestoneAchieved(communityId: string, milestoneType: string
   pushToCortex("/milestone-achieved", { communityId, milestoneType, achievedAt }).catch(() => {});
 }
 
+/** Event closed — attendance attestation (Merkle batch or individual per tier) */
+export async function pushEventClosed(
+  activityId: string,
+  communityId: string,
+  closedAt: string,
+  attendees: { derivationInput: string; displayName: string; joinedAt: string | null }[],
+  tier: "free" | "paid" = "free"
+) {
+  if (attendees.length === 0) return;
+  await pushToCortex("/event-closed", {
+    activityId,
+    communityId,
+    closedAt,
+    tier,
+    attendees,
+  });
+}
+
 /** User deleted — GDPR PDA cleanup */
 export function pushUserDeleted(communityId: string, userId: string) {
   pushToCortex("/user-deleted", { communityId, userId }).catch(() => {});

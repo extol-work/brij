@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { activities, attendances } from "@/db/schema";
 import { eq, and, lt, isNotNull } from "drizzle-orm";
 import { generateShareCode } from "@/lib/share-code";
+import { pushActivityClosed } from "@/lib/event-close";
 
 /**
  * GET /api/cron/auto-close — close stale activities
@@ -35,7 +36,6 @@ export async function GET(req: NextRequest) {
   }
 
   // Close them all
-  const staleIds = stale.map((a) => a.id);
   await db
     .update(activities)
     .set({ status: "closed", closedAt: now, updatedAt: now })
@@ -46,6 +46,11 @@ export async function GET(req: NextRequest) {
         lt(activities.endsAt, now),
       )
     );
+
+  // Push each closed activity to Cortex for attestation
+  for (const activity of stale) {
+    pushActivityClosed(activity.id, activity.groupId, now).catch(() => {});
+  }
 
   // Auto-create next occurrence for recurring activities
   let created = 0;
