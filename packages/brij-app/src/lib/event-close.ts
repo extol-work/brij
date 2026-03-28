@@ -18,9 +18,12 @@ function getRotationEpoch(): number {
 export async function pushActivityClosed(
   activityId: string,
   groupId: string | null,
-  closedAt: Date
+  closedAt: Date,
+  coordinatorId?: string
 ) {
-  if (!groupId) return; // Personal activities (no group) don't get attested
+  // Community context: group ID for group activities, coordinator ID for personal
+  const communityId = groupId || coordinatorId;
+  if (!communityId) return;
 
   const epoch = getRotationEpoch();
 
@@ -43,7 +46,7 @@ export async function pushActivityClosed(
 
     if (checkin.userId) {
       // brij user — derive from userId
-      derivationInput = `${groupId}:${checkin.userId}:${epoch}`;
+      derivationInput = `${communityId}:${checkin.userId}:${epoch}`;
       // Fetch display name
       const user = await db.query.users.findFirst({
         where: eq(users.id, checkin.userId),
@@ -69,7 +72,7 @@ export async function pushActivityClosed(
   // Push to Cortex — fire and forget
   pushEventClosed(
     activityId,
-    groupId,
+    communityId,
     closedAt.toISOString(),
     attendeeList,
     "free" // Default to free tier until EXT-149 community plans

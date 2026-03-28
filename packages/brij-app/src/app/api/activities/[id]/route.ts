@@ -85,7 +85,7 @@ export async function PATCH(
 
   // On close: push attendees to Cortex for attestation + check milestones
   if (status === "closed") {
-    pushActivityClosed(id, existing.groupId, new Date()).catch(() => {});
+    pushActivityClosed(id, existing.groupId, new Date(), existing.coordinatorId).catch(() => {});
     if (existing.groupId) {
       checkFirstActivity3Plus(existing.groupId, id).catch(() => {});
     }

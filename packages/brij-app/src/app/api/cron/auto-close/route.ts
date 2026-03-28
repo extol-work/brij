@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   // Push each closed activity to Cortex for attestation
   for (const activity of stale) {
-    pushActivityClosed(activity.id, activity.groupId, now).catch(() => {});
+    pushActivityClosed(activity.id, activity.groupId, now, activity.coordinatorId).catch(() => {});
   }
 
   // Auto-create next occurrence for recurring activities
