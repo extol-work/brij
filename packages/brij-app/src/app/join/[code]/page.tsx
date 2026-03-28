@@ -39,11 +39,11 @@ function isLive(startsAt: string | null, endsAt: string | null): boolean {
   if (!startsAt) return false;
   const start = new Date(startsAt).getTime();
   const now = Date.now();
+  const hourBefore = start - 60 * 60 * 1000;
   if (endsAt) {
     const end = new Date(endsAt).getTime();
-    return now >= start && now <= end;
+    return now >= hourBefore && now <= end;
   }
-  const hourBefore = start - 60 * 60 * 1000;
   const fourHoursAfter = start + 4 * 60 * 60 * 1000;
   return now >= hourBefore && now <= fourHoursAfter;
 }

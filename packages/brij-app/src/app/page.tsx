@@ -65,11 +65,11 @@ function isLive(a: Activity): boolean {
   if (a.status !== "open" || !a.startsAt) return false;
   const start = new Date(a.startsAt).getTime();
   const now = Date.now();
+  const hourBefore = start - 60 * 60 * 1000;
   if (a.endsAt) {
     const end = new Date(a.endsAt).getTime();
-    return now >= start && now <= end;
+    return now >= hourBefore && now <= end;
   }
-  const hourBefore = start - 60 * 60 * 1000;
   const fourHoursAfter = start + 4 * 60 * 60 * 1000;
   return now >= hourBefore && now <= fourHoursAfter;
 }
