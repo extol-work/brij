@@ -28,6 +28,15 @@ body {
   color: var(--foreground);
 }
 
+/* Bottom sheet animation */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
 /* brij logo byline */
 .brij-byline {
   font-family: var(--font-outfit), system-ui, sans-serif;
