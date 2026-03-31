@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 // --- Types ---
 
@@ -87,6 +88,8 @@ export default function ProfilePage() {
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showAllCommunities, setShowAllCommunities] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`/api/profile/${userId}`)
@@ -144,6 +147,28 @@ export default function ProfilePage() {
     setShowMenu(false);
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+    setUploading(true);
+    try {
+      const { resizeImage } = await import("@/lib/resize-image");
+      const resized = await resizeImage(file, 512, 0.9);
+      const form = new FormData();
+      form.append("avatar", resized, "avatar.jpg");
+      const res = await fetch("/api/users/avatar", { method: "POST", body: form });
+      if (res.ok) {
+        const { image } = await res.json();
+        setProfile({ ...profile, image });
+      }
+    } catch {
+      // Silent fail — user can retry
+    } finally {
+      setUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <div className="max-w-md mx-auto px-5 py-8">
@@ -157,22 +182,47 @@ export default function ProfilePage() {
           </button>
 
           {/* Avatar */}
-          {profile.image ? (
-            <img
-              src={profile.image}
-              alt={profile.name}
-              className="w-24 h-24 rounded-full mx-auto mb-3 border-3 border-white shadow-md object-cover"
-            />
-          ) : (
-            <div
-              className="w-24 h-24 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-4xl font-bold border-3 border-white shadow-md"
-              style={{
-                background: `linear-gradient(135deg, ${profile.communities[0]?.color || "#7c3aed"}, ${profile.communities[1]?.color || "#f59e0b"})`,
-              }}
-            >
-              {getInitials(profile.name)}
-            </div>
-          )}
+          <div className="relative w-24 h-24 mx-auto mb-3">
+            {profile.image ? (
+              <img
+                src={profile.image}
+                alt={profile.name}
+                className="w-24 h-24 rounded-full border-3 border-white shadow-md object-cover"
+              />
+            ) : (
+              <div
+                className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold border-3 border-white shadow-md"
+                style={{
+                  background: `linear-gradient(135deg, ${profile.communities[0]?.color || "#7c3aed"}, ${profile.communities[1]?.color || "#f59e0b"})`,
+                }}
+              >
+                {getInitials(profile.name)}
+              </div>
+            )}
+            {isSelf && (
+              <>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-bark-900 border-2 border-white flex items-center justify-center text-white text-sm shadow-md hover:bg-bark-800 transition-colors disabled:opacity-50"
+                  title="Change photo"
+                >
+                  {uploading ? (
+                    <span className="animate-spin text-xs">&#9696;</span>
+                  ) : (
+                    <span>&#128247;</span>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
 
           <h1 className="text-[22px] font-bold tracking-tight text-bark-900">
             {profile.name}
@@ -208,16 +258,17 @@ export default function ProfilePage() {
             return isVisitor ? (
               <div>
                 {visibleCommunities.map((c) => (
-                  <div
+                  <Link
                     key={c.id}
-                    className="flex items-center gap-2 py-2 text-sm text-bark-900"
+                    href={`/groups/${c.id}`}
+                    className="flex items-center gap-2 py-2 text-sm text-bark-900 hover:text-amber-600 transition-colors"
                   >
                     <span
                       className="w-4 h-4 rounded-full flex-shrink-0"
                       style={{ backgroundColor: c.color }}
                     />
                     {c.name}
-                  </div>
+                  </Link>
                 ))}
                 {hasMore && !showAllCommunities && (
                   <button
@@ -507,7 +558,7 @@ function CommunityCard({
   showCounts: boolean;
 }) {
   return (
-    <div className="bg-white border border-warm-gray-200 rounded-xl p-3.5">
+    <Link href={`/groups/${c.id}`} className="block bg-white border border-warm-gray-200 rounded-xl p-3.5 hover:border-amber-300 transition-colors">
       <div className="flex items-center gap-2 mb-1">
         <span
           className="w-4 h-4 rounded-full flex-shrink-0"
@@ -553,7 +604,7 @@ function CommunityCard({
           </>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
