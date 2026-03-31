@@ -37,13 +37,11 @@ export default function JoinGroup() {
       .finally(() => setLoading(false));
   }, [code]);
 
-  // Auto-join if authenticated and group is open
+  // Auto-join if authenticated — for open groups or coordinator-invited users on invite-only groups
   useEffect(() => {
     if (status !== "authenticated" || !preview) return;
-    if (preview.membershipMode === "invite_only") {
-      setInviteOnly(true);
-      return;
-    }
+    // Always attempt join first — the API will auto-activate coordinator-invited users
+    // even on invite-only groups. If the user wasn't invited, the API returns invite_only error.
     attemptJoin();
   }, [status, preview]);
 

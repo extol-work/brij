@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Group not found" }, { status: 404 });
   }
 
-  // Check not already a member
+  // Check if already a member or has a pending invite
   const existing = await db.query.groupMemberships.findFirst({
     where: and(
       eq(groupMemberships.groupId, group.id),
@@ -55,6 +55,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (existing) {
+    // If pending and coordinator-invited, auto-activate (they accepted the invite)
+    if (existing.status === "pending" && existing.invitedBy) {
+      await db
+        .update(groupMemberships)
+        .set({ status: "active", joinedAt: new Date() })
+        .where(eq(groupMemberships.id, existing.id));
+      return NextResponse.json({ groupId: group.id, name: group.name, accepted: true }, { status: 200 });
+    }
     return NextResponse.json({ error: "Already a member", groupId: group.id }, { status: 409 });
   }
 

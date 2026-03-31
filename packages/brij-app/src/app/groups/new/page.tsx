@@ -31,8 +31,9 @@ export default function NewGroupOnboarding() {
 
   // Step 3
   const [membershipMode, setMembershipMode] = useState<"invite_only" | "open">("invite_only");
-  const [inviteEmails, setInviteEmails] = useState<string[]>([]);
+  const [inviteEmails, setInviteEmails] = useState<{ email: string; status: "checking" | "found" | "not_found"; name?: string | null }[]>([]);
   const [emailInput, setEmailInput] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [inviteErrors, setInviteErrors] = useState<string[]>([]);
 
   // Result
@@ -44,12 +45,38 @@ export default function NewGroupOnboarding() {
 
   const selectedType = GROUP_TYPES.find((t) => t.id === groupType)!;
 
-  function addEmail() {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  async function addEmail() {
     const email = emailInput.trim().toLowerCase();
-    if (!email || !email.includes("@")) return;
-    if (inviteEmails.includes(email)) return;
-    setInviteEmails((prev) => [...prev, email]);
+    setEmailError(null);
+    if (!email) return;
+    if (!emailRegex.test(email)) {
+      setEmailError("Enter a valid email address");
+      return;
+    }
+    if (inviteEmails.some((e) => e.email === email)) {
+      setEmailError("Already added");
+      return;
+    }
+    setInviteEmails((prev) => [...prev, { email, status: "checking" }]);
     setEmailInput("");
+
+    try {
+      const res = await fetch(`/api/users/lookup?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      setInviteEmails((prev) =>
+        prev.map((e) =>
+          e.email === email
+            ? { ...e, status: data.exists ? "found" : "not_found", name: data.name ?? null }
+            : e
+        )
+      );
+    } catch {
+      setInviteEmails((prev) =>
+        prev.map((e) => (e.email === email ? { ...e, status: "not_found" } : e))
+      );
+    }
   }
 
   async function handleCreate() {
@@ -75,9 +102,9 @@ export default function NewGroupOnboarding() {
     setCreatedGroup(group);
     track("group_created", { name_length: name.length });
 
-    // Invite members (best-effort, don't block)
+    // Send invites to all emails (best-effort, don't block)
     const errors: string[] = [];
-    for (const email of inviteEmails) {
+    for (const { email } of inviteEmails) {
       const invRes = await fetch(`/api/groups/${group.id}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -248,23 +275,30 @@ export default function NewGroupOnboarding() {
               <label className="block text-[13px] font-semibold text-[#666] mb-1.5">
                 Add your founding members
               </label>
-              <div className="px-3.5 py-3 border border-[#e8e0d4] rounded-xl bg-[#FDF8F0] min-h-[48px]">
+              <div className={`px-3.5 py-3 border rounded-xl bg-[#FDF8F0] min-h-[48px] ${emailError ? "border-red-400" : "border-[#e8e0d4]"}`}>
                 {inviteEmails.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {inviteEmails.map((email) => (
+                    {inviteEmails.map(({ email, status, name }) => (
                       <span
                         key={email}
-                        className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-[#e8e0d4] rounded-full text-[13px]"
+                        className={`flex items-center gap-1.5 px-2.5 py-1 bg-white border rounded-full text-[13px] ${
+                          status === "found" ? "border-green-300" : status === "not_found" ? "border-amber-300" : "border-[#e8e0d4]"
+                        }`}
                       >
                         <span
-                          className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
-                          style={{ backgroundColor: selectedType.color }}
+                          className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-semibold text-white ${
+                            status === "checking" ? "animate-pulse" : ""
+                          }`}
+                          style={{ backgroundColor: status === "not_found" ? "#d97706" : selectedType.color }}
                         >
                           {email.charAt(0).toUpperCase()}
                         </span>
-                        {email.split("@")[0]}
+                        <span>{name || email.split("@")[0]}</span>
+                        {status === "not_found" && (
+                          <span className="text-[10px] text-amber-600">not on brij</span>
+                        )}
                         <button
-                          onClick={() => setInviteEmails((prev) => prev.filter((e) => e !== email))}
+                          onClick={() => setInviteEmails((prev) => prev.filter((e) => e.email !== email))}
                           className="text-[11px] text-[#999] ml-0.5"
                         >
                           ×
@@ -276,17 +310,23 @@ export default function NewGroupOnboarding() {
                 <input
                   type="email"
                   value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
+                  onChange={(e) => { setEmailInput(e.target.value); setEmailError(null); }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === ",") {
                       e.preventDefault();
                       addEmail();
                     }
                   }}
-                  placeholder="Add by email..."
+                  placeholder="Enter email and press Enter..."
                   className="w-full text-sm bg-transparent outline-none placeholder-[#999]"
                 />
               </div>
+              {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+              {inviteEmails.some((e) => e.status === "not_found") && (
+                <p className="text-xs text-amber-600 mt-1">
+                  People not on brij yet will need to sign up before they can join. Share the invite link instead.
+                </p>
+              )}
             </div>
 
             <p className="text-[13px] text-[#999]">
@@ -302,7 +342,7 @@ export default function NewGroupOnboarding() {
             </button>
             <button
               onClick={() => {
-                setInviteEmails([]);
+                setInviteEmails([] as typeof inviteEmails);
                 handleCreate();
               }}
               disabled={creating}
@@ -327,7 +367,8 @@ export default function NewGroupOnboarding() {
 
             {inviteEmails.length > 0 && inviteErrors.length === 0 && (
               <p className="text-sm text-green-600 mb-4">
-                {inviteEmails.length} {inviteEmails.length === 1 ? "invite" : "invites"} sent
+                {inviteEmails.length}{" "}
+                {inviteEmails.length === 1 ? "invite" : "invites"} sent — they&apos;ll need to accept
               </p>
             )}
             {inviteErrors.length > 0 && (

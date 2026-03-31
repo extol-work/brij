@@ -79,6 +79,7 @@ export default function GroupDetailPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
   const [todayExpanded, setTodayExpanded] = useState(false);
   const [cachedGeo, setCachedGeo] = useState<{ latitude: number; longitude: number } | null>(null);
   const [groupActivities, setGroupActivities] = useState<GroupActivity[]>([]);
@@ -154,18 +155,21 @@ export default function GroupDetailPage() {
     e.preventDefault();
     setInviting(true);
     setInviteError("");
+    setInviteSuccess("");
     const res = await fetch(`/api/groups/${id}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: inviteEmail }),
     });
+    const data = await res.json();
     if (res.ok) {
-      // Refresh group to get updated member list
-      const g = await fetch(`/api/groups/${id}`).then((r) => r.json());
-      if (g.id) setGroup(g);
+      setInviteSuccess(
+        data.userExists
+          ? `Invite sent to ${inviteEmail} — they'll need to accept it`
+          : `Invite sent to ${inviteEmail} — they'll need to sign up first`
+      );
       setInviteEmail("");
     } else {
-      const data = await res.json();
       setInviteError(data.error || "Failed to invite");
     }
     setInviting(false);
@@ -382,6 +386,7 @@ export default function GroupDetailPage() {
               </form>
             )}
             {inviteError && <p className="text-sm text-red-600 mb-4">{inviteError}</p>}
+            {inviteSuccess && <p className="text-sm text-green-600 mb-4">{inviteSuccess}</p>}
 
             {/* Pending requests (coordinator only) */}
             {isCoordinator && group.members.filter((m) => m.status === "pending").length > 0 && (

@@ -126,6 +126,9 @@ export const groups = pgTable("groups", {
   createdById: uuid("created_by_id")
     .references(() => users.id)
     .notNull(),
+  coverImageUrl: text("cover_image_url"),
+  platform: text("platform"), // 'discord', 'telegram', null
+  platformGuildId: text("platform_guild_id"), // Discord guild ID, Telegram chat ID
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
@@ -142,6 +145,7 @@ export const groupMemberships = pgTable("group_memberships", {
     .notNull(),
   role: groupRoleEnum("role").default("member").notNull(),
   status: groupMemberStatusEnum("status").default("active").notNull(),
+  invitedBy: uuid("invited_by").references(() => users.id), // set when coordinator invites — distinguishes from self-requested pending
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }), // for unread dots
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
@@ -188,6 +192,7 @@ export const activities = pgTable("activities", {
   recurringFrequency: recurringFrequencyEnum("recurring_frequency"),
   seriesId: uuid("series_id"),
   activityType: text("activity_type"),
+  platformEventId: text("platform_event_id"), // Discord event ID, etc.
   photoUrl: text("photo_url"),
   cardUrl: text("card_url"), // pre-generated card image in Vercel Blob
   summary: text("summary"),
@@ -209,6 +214,9 @@ export const attendances = pgTable("attendances", {
   status: attendanceStatusEnum("status").default("coming").notNull(),
   rsvpAt: timestamp("rsvp_at", { withTimezone: true }).defaultNow().notNull(),
   checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+  platformIdentityId: uuid("platform_identity_id")
+    .references(() => platformIdentities.id),
+  attestationLevel: text("attestation_level").default("none"), // 'none' | 'merkle' | 'individual'
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
 });
@@ -276,6 +284,42 @@ export const expenseConfirmations = pgTable("expense_confirmations", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   unique().on(table.entryId, table.confirmedById),
+]);
+
+// --- Bot API Keys ---
+
+export const botApiKeys = pgTable("bot_api_keys", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  keyHash: text("key_hash").notNull(), // SHA-256 of the raw key
+  keyPrefix: text("key_prefix").notNull(), // First 12 chars for identification
+  label: text("label"), // "Discord bot", "Telegram bot"
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdById: uuid("created_by_id")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// --- Platform Identities ---
+
+export const platformIdentities = pgTable("platform_identities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  platform: text("platform").notNull(), // 'discord', 'telegram', etc.
+  platformUserId: text("platform_user_id").notNull(), // Discord snowflake, Telegram ID
+  platformUsername: text("platform_username"), // Display name at time of linking
+  userId: uuid("user_id").references(() => users.id), // NULL until claimed
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  unclaimedAttendanceCount: integer("unclaimed_attendance_count").default(0).notNull(),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  linkedAt: timestamp("linked_at", { withTimezone: true }), // When user claimed
+}, (table) => [
+  unique().on(table.platform, table.platformUserId, table.groupId),
 ]);
 
 // --- Milestones ---

@@ -6,7 +6,7 @@
  */
 
 import { db } from "@/db";
-import { attendances, users } from "@/db/schema";
+import { attendances, users, platformIdentities } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { pushEventClosed } from "@/lib/cortex";
 
@@ -52,6 +52,15 @@ export async function pushActivityClosed(
         where: eq(users.id, checkin.userId),
       });
       displayName = user?.name || user?.email || "Member";
+    } else if (checkin.platformIdentityId) {
+      // Platform identity (bot-originated) — derive from platform prefix
+      const pi = await db.query.platformIdentities.findFirst({
+        where: eq(platformIdentities.id, checkin.platformIdentityId),
+      });
+      if (!pi) continue;
+      // HMAC derivation input: communityId:platform:platformUserId:epoch
+      derivationInput = `${communityId}:${pi.platform}:${pi.platformUserId}:${epoch}`;
+      displayName = pi.platformUsername || `${pi.platform}:${pi.platformUserId}`;
     } else if (checkin.guestName) {
       // Guest check-in — no attestation (no stable identity to derive from)
       // Skip guests per existing policy
