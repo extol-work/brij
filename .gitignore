@@ -30,6 +30,9 @@ yarn-debug.log*
 # vercel
 .vercel
 
+# claude
+CLAUDE.md
+
 # drizzle
 packages/brij-app/drizzle/meta/
 
@@ -41,3 +44,4 @@ experiments/parallax-cards/depth-maps/
 experiments/parallax-cards/output/
 experiments/parallax-cards/cards/
 experiments/parallax-cards/manifest.json
+.env*.local

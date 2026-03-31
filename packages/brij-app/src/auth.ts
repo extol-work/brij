@@ -20,7 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Resend({
       apiKey: process.env.AUTH_RESEND_KEY,
-      from: process.env.EMAIL_FROM || "brij <noreply@brij.extol.work>",
+      from: process.env.EMAIL_FROM || "brij <noreply@extol.work>",
     }),
   ],
   pages: {

@@ -82,8 +82,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const inviterName = user.name || "A coordinator";
 
   const resend = new Resend(process.env.AUTH_RESEND_KEY);
-  await resend.emails.send({
-    from: process.env.EMAIL_FROM || "brij <noreply@brij.extol.work>",
+  const { error: sendError } = await resend.emails.send({
+    from: process.env.EMAIL_FROM || "brij <noreply@extol.work>",
     to: trimmedEmail,
     subject: `You're invited to join ${group.name} on brij`,
     html: `
@@ -107,6 +107,14 @@ export async function POST(req: NextRequest, { params }: Params) {
       </div>
     `,
   });
+
+  if (sendError) {
+    console.error("Resend invite email failed:", sendError);
+    return NextResponse.json(
+      { error: `Failed to send invite: ${sendError.message}` },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json(
     { status: "invited", email: trimmedEmail, userExists: !!invitee },
