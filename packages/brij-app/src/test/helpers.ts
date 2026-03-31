@@ -55,7 +55,8 @@ export function buildRequest(
   if (body) {
     init.body = JSON.stringify(body);
   }
-  return new NextRequest(new URL(url, "http://localhost:3000"), init);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return new NextRequest(new URL(url, "http://localhost:3000"), init as any);
 }
 
 // --- Response helpers ---
