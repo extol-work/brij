@@ -155,6 +155,23 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Integrations */}
+        <div>
+          <h2 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Integrations</h2>
+          <div className="bg-white border border-warm-gray-200 rounded-xl p-4">
+            <Link
+              href="/settings/api-keys"
+              className="flex justify-between items-center"
+            >
+              <div>
+                <p className="text-sm text-bark-900 font-medium">API Keys</p>
+                <p className="text-xs text-warm-gray-400">Manage bot API keys for your groups</p>
+              </div>
+              <span className="text-warm-gray-400 text-sm">&rsaquo;</span>
+            </Link>
+          </div>
+        </div>
+
         {/* Account */}
         <div>
           <h2 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Account</h2>
