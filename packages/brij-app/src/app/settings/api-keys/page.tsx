@@ -27,7 +27,7 @@ export default function ApiKeysPage() {
   // Generate form
   const [selectedGroup, setSelectedGroup] = useState("");
   const [label, setLabel] = useState("");
-  const [expiryDays, setExpiryDays] = useState(30);
+  const [expiryDays, setExpiryDays] = useState(90);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
 
@@ -187,7 +187,7 @@ export default function ApiKeysPage() {
                 <div>
                   <label className="block text-xs text-warm-gray-400 mb-1">Expires in</label>
                   <div className="flex gap-2">
-                    {[1, 7, 30].map((d) => (
+                    {[1, 7, 30, 90].map((d) => (
                       <button
                         key={d}
                         onClick={() => setExpiryDays(d)}
