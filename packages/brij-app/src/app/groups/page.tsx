@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { BottomNav } from "@/components/bottom-nav";
 
 interface Group {
   id: string;
@@ -30,7 +31,7 @@ export default function MyGroups() {
   if (status === "loading" || loading) return null;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-16">
       <div className="flex items-center gap-2 px-4 py-4 border-b border-warm-gray-200">
         <Link href="/" className="text-base text-violet-600 cursor-pointer">
           &lsaquo; Back
@@ -79,6 +80,7 @@ export default function MyGroups() {
           </Link>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

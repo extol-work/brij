@@ -7,6 +7,7 @@ import Link from "next/link";
 import { identifyUser, track } from "@/lib/posthog";
 import { getLocation } from "@/lib/geolocation";
 import { BrijLogo } from "@/components/brij-logo";
+import { BottomNav } from "@/components/bottom-nav";
 
 interface Activity {
   id: string;
@@ -748,7 +749,7 @@ export default function Dashboard() {
   const activeGroup = groups.find((g) => g.id === activeGroupId) || null;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-16">
       <header className="border-b border-warm-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <BrijLogo />
@@ -955,6 +956,7 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+      <BottomNav />
     </div>
   );
 }

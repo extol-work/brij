@@ -1,11 +1,23 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import QRCode from "react-qr-code";
 import { getLocation } from "@/lib/geolocation";
+import { track } from "@/lib/posthog";
+
+interface GroupPreview {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  membershipMode: string;
+  joinCode: string;
+  memberCount: number;
+  membershipStatus: string | null;
+}
 
 interface Member {
   id: string;
@@ -84,9 +96,19 @@ export default function GroupDetailPage() {
   const [cachedGeo, setCachedGeo] = useState<{ latitude: number; longitude: number } | null>(null);
   const [groupActivities, setGroupActivities] = useState<GroupActivity[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
+  const [preview, setPreview] = useState<GroupPreview | null>(null);
+  const [joinAction, setJoinAction] = useState<"idle" | "joining" | "requesting" | "done">("idle");
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status === "loading") return;
+    if (status !== "authenticated") {
+      // Load preview for unauthenticated users
+      fetch(`/api/groups/${id}/preview`)
+        .then((r) => r.json())
+        .then((data) => { if (data.id) setPreview(data); })
+        .finally(() => setLoading(false));
+      return;
+    }
     Promise.all([
       fetch(`/api/groups/${id}`).then((r) => r.json()),
       fetch(`/api/groups/${id}/journal`).then((r) => r.json()),
@@ -94,21 +116,135 @@ export default function GroupDetailPage() {
       fetch(`/api/groups/${id}/expenses`).then((r) => r.json()).catch(() => []),
     ])
       .then(([g, j, a, e]) => {
-        if (g.id) setGroup(g);
-        if (Array.isArray(j)) setEntries(j);
-        if (Array.isArray(a)) setGroupActivities(a);
-        if (Array.isArray(e)) setExpenses(e);
+        if (g.id) {
+          setGroup(g);
+          if (Array.isArray(j)) setEntries(j);
+          if (Array.isArray(a)) setGroupActivities(a);
+          if (Array.isArray(e)) setExpenses(e);
+        } else {
+          // Not a member — load preview
+          fetch(`/api/groups/${id}/preview`)
+            .then((r) => r.json())
+            .then((data) => { if (data.id) setPreview(data); });
+        }
       })
       .finally(() => setLoading(false));
   }, [id, status]);
 
   if (status === "loading" || loading) return null;
   if (!group) {
+    if (!preview) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-warm-gray-500 mb-4">Group not found.</p>
+            <Link href="/" className="text-violet-600 font-medium hover:underline">
+              Go to dashboard
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    const isPending = preview.membershipStatus === "pending";
+    const isInviteOnly = preview.membershipMode === "invite_only";
+
+    async function handleJoin() {
+      if (!preview) return;
+      setJoinAction("joining");
+      const res = await fetch("/api/groups/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: preview.joinCode }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setJoinAction("done");
+        track("group_joined", { method: "profile_link" });
+        setTimeout(() => window.location.reload(), 1000);
+      } else if (data.error === "Already a member") {
+        window.location.reload();
+      } else if (data.error === "invite_only") {
+        setJoinAction("idle");
+      } else {
+        setJoinAction("idle");
+      }
+    }
+
+    async function handleRequestAdmission() {
+      if (!preview) return;
+      setJoinAction("requesting");
+      const res = await fetch("/api/groups/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: preview.joinCode, requestAdmission: true }),
+      });
+      const data = await res.json();
+      if (data.status === "pending") {
+        setJoinAction("done");
+        track("group_admission_requested", { groupId: preview.id });
+      } else if (data.error === "Already a member") {
+        window.location.reload();
+      }
+    }
+
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-warm-gray-500 mb-4">Group not found or you are not a member.</p>
-          <Link href="/" className="text-violet-600 font-medium hover:underline">
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2]">
+        <div className="text-center max-w-sm px-6">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white mx-auto mb-4"
+            style={{ backgroundColor: preview.color }}
+          >
+            {preview.name.charAt(0).toUpperCase()}
+          </div>
+          <h1 className="text-2xl font-bold text-bark-900 mb-1">{preview.name}</h1>
+          {preview.description && (
+            <p className="text-sm text-warm-gray-500 mb-2">{preview.description}</p>
+          )}
+          <p className="text-xs text-warm-gray-400 mb-6">
+            {preview.memberCount} member{preview.memberCount !== 1 ? "s" : ""}
+          </p>
+
+          {status !== "authenticated" ? (
+            <button
+              onClick={() => signIn(undefined, { callbackUrl: `/groups/${id}` })}
+              className="w-full px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors mb-4"
+            >
+              Sign in to join
+            </button>
+          ) : isPending || joinAction === "done" ? (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-xl mb-4">
+              <p className="text-sm text-green-700 font-medium">
+                {isPending ? "Request pending" : isInviteOnly ? "Request sent" : "Joined!"}
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                {isPending || isInviteOnly ? "The coordinator will review your request." : "Redirecting..."}
+              </p>
+            </div>
+          ) : isInviteOnly ? (
+            <>
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-4">
+                <p className="text-sm text-amber-800 font-medium">This group is invite-only</p>
+              </div>
+              <button
+                onClick={handleRequestAdmission}
+                disabled={joinAction === "requesting"}
+                className="w-full px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50 mb-4"
+              >
+                {joinAction === "requesting" ? "Requesting..." : "Request to join"}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleJoin}
+              disabled={joinAction === "joining"}
+              className="w-full px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50 mb-4"
+            >
+              {joinAction === "joining" ? "Joining..." : "Join this community"}
+            </button>
+          )}
+
+          <Link href="/" className="text-violet-600 font-medium hover:underline text-sm">
             Go to dashboard
           </Link>
         </div>
