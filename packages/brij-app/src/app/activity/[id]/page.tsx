@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { BrijLogo } from "@/components/brij-logo";
 import QRCode from "react-qr-code";
@@ -32,6 +33,7 @@ interface Activity {
 
 interface Attendee {
   id: string;
+  userId: string | null;
   name: string;
   status: "coming" | "checked_in";
   rsvpAt: string;
@@ -109,6 +111,17 @@ function toLocalTime(iso: string | null): string {
   const period = h >= 12 ? "PM" : "AM";
   const h12 = h % 12 || 12;
   return m === 0 ? `${h12} ${period}` : `${h12}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+function AttendeeName({ attendee }: { attendee: Attendee }) {
+  if (attendee.userId) {
+    return (
+      <Link href={`/profile/${attendee.userId}`} className="text-sm text-bark-900 hover:text-amber-600 hover:underline transition-colors">
+        {firstName(attendee.name)}
+      </Link>
+    );
+  }
+  return <span className="text-sm text-bark-900">{firstName(attendee.name)}</span>;
 }
 
 export default function ActivityDetail() {
@@ -360,6 +373,7 @@ export default function ActivityDetail() {
         ...prev,
         {
           id: attendance.id,
+          userId: null,
           name: walkUpName.trim(),
           status: "checked_in",
           rsvpAt: new Date().toISOString(),
@@ -646,7 +660,9 @@ export default function ActivityDetail() {
                   className="flex items-center justify-between px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-violet-700 font-medium">{firstName(c.name)}</span>
+                    <Link href={`/profile/${c.userId}`} className="text-sm text-violet-700 font-medium hover:underline">
+                      {firstName(c.name)}
+                    </Link>
                     {c.isCreator && (
                       <span className="text-xs text-violet-400">Creator</span>
                     )}
@@ -858,7 +874,7 @@ export default function ActivityDetail() {
                   className="flex items-center justify-between py-2 px-3 bg-white border border-warm-gray-200 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-bark-900">{firstName(a.name)}</span>
+                    <AttendeeName attendee={a} />
                     {a.isGuest && (
                       <span className="text-xs text-warm-gray-400">(guest)</span>
                     )}
@@ -890,7 +906,7 @@ export default function ActivityDetail() {
                   className="flex items-center justify-between py-2 px-3 bg-white border border-warm-gray-200 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-bark-900">{firstName(a.name)}</span>
+                    <AttendeeName attendee={a} />
                     {a.isGuest && (
                       <span className="text-xs text-warm-gray-400">(guest)</span>
                     )}
@@ -930,7 +946,7 @@ export default function ActivityDetail() {
                     className="flex items-center justify-between py-2 px-3 bg-white border border-warm-gray-200 rounded-lg"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-bark-900">{firstName(a.name)}</span>
+                      <AttendeeName attendee={a} />
                       {a.isGuest && (
                         <span className="text-xs text-warm-gray-400">(guest)</span>
                       )}

@@ -34,6 +34,7 @@ export async function GET(
 
   const attendees = records.map((r) => ({
     id: r.id,
+    userId: r.userId || null,
     name: r.displayName || r.email || r.guestName || "Anonymous",
     status: r.status,
     rsvpAt: r.rsvpAt,

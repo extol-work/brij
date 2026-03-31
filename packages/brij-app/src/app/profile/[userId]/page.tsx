@@ -86,6 +86,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showAllCommunities, setShowAllCommunities] = useState(false);
 
   useEffect(() => {
     fetch(`/api/profile/${userId}`)
@@ -196,36 +197,57 @@ export default function ProfilePage() {
             {isVisitor ? "Active In" : "Communities"}
           </h2>
 
-          {isVisitor ? (
-            // Visitor: names + color dots only
-            <div>
-              {profile.communities.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-2 py-2 text-sm text-bark-900"
-                >
-                  <span
-                    className="w-4 h-4 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: c.color }}
+          {(() => {
+            const MAX_VISIBLE = 5;
+            const communities = profile.communities;
+            const visibleCommunities = showAllCommunities
+              ? communities
+              : communities.slice(0, MAX_VISIBLE);
+            const hasMore = communities.length > MAX_VISIBLE;
+
+            return isVisitor ? (
+              <div>
+                {visibleCommunities.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-2 py-2 text-sm text-bark-900"
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: c.color }}
+                    />
+                    {c.name}
+                  </div>
+                ))}
+                {hasMore && !showAllCommunities && (
+                  <button
+                    onClick={() => setShowAllCommunities(true)}
+                    className="text-[12px] text-amber-600 font-semibold mt-1 hover:text-amber-500 transition-colors"
+                  >
+                    Show all {communities.length} communities
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {visibleCommunities.map((c) => (
+                  <CommunityCard
+                    key={c.id}
+                    community={c}
+                    showCounts={(isMember && c.isShared) || isSelf}
                   />
-                  {c.name}
-                </div>
-              ))}
-            </div>
-          ) : (
-            // Authenticated+: community cards with detail
-            <div className="space-y-2.5">
-              {profile.communities.map((c) => (
-                <CommunityCard
-                  key={c.id}
-                  community={c}
-                  showCounts={
-                    (isMember && c.isShared) || isSelf
-                  }
-                />
-              ))}
-            </div>
-          )}
+                ))}
+                {hasMore && !showAllCommunities && (
+                  <button
+                    onClick={() => setShowAllCommunities(true)}
+                    className="w-full text-[12px] text-amber-600 font-semibold py-2 hover:text-amber-500 transition-colors"
+                  >
+                    Show all {communities.length} communities
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Quotes — "What X is known for" */}
@@ -344,6 +366,19 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+
+        {/* Connection nudge — authenticated, no shared communities */}
+        {isAuthenticated && (
+          <div className="mt-5 bg-amber-50 border border-amber-300 rounded-xl p-4 text-center">
+            <p className="text-[13px] text-amber-900 font-medium">
+              You and {profile.name.split(" ")[0]} aren&apos;t in any communities
+              together yet.
+            </p>
+            <p className="text-[11px] text-amber-700 mt-1">
+              Join one of their communities to see participation details.
+            </p>
+          </div>
+        )}
 
         {/* Private section — co-members only (placeholder for governance data) */}
         {isMember && (profile.sharedCommunityCount ?? 0) > 0 && (

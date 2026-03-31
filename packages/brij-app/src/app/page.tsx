@@ -618,6 +618,7 @@ export default function Dashboard() {
   const [createdLimit, setCreatedLimit] = useState(5);
   const [attendedLimit, setAttendedLimit] = useState(5);
   const [userId, setUserId] = useState("");
+  const [showDashMenu, setShowDashMenu] = useState(false);
 
   useEffect(() => {
     if (!authenticated) {
@@ -751,10 +752,44 @@ export default function Dashboard() {
       <header className="border-b border-warm-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <BrijLogo />
-          <div className="flex items-center gap-4">
-            <Link href="/settings" className="text-sm text-warm-gray-500 hover:text-bark-900 transition-colors">
-              {maskEmail(session?.user?.email || "Signed in")}
-            </Link>
+          <div className="relative">
+            <button
+              onClick={() => setShowDashMenu((p) => !p)}
+              className="w-9 h-9 rounded-lg border border-warm-gray-200 bg-white flex items-center justify-center text-warm-gray-400 hover:text-bark-900 transition-colors"
+            >
+              &#x22EF;
+            </button>
+            {showDashMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowDashMenu(false)} />
+                <div className="absolute right-0 top-11 z-50 w-52 bg-white border border-warm-gray-200 rounded-xl shadow-lg py-1 animate-fade-in">
+                  <Link
+                    href={`/profile/${userId}`}
+                    onClick={() => setShowDashMenu(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-bark-900 hover:bg-warm-gray-50 transition-colors"
+                  >
+                    <span className="text-warm-gray-400 w-5 text-center text-base">&#128100;</span>
+                    My profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowDashMenu(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-bark-900 hover:bg-warm-gray-50 transition-colors"
+                  >
+                    <span className="text-warm-gray-400 w-5 text-center text-base">&#9881;</span>
+                    Settings
+                  </Link>
+                  <div className="border-t border-warm-gray-100 my-1" />
+                  <button
+                    onClick={() => { setShowDashMenu(false); signOut(); }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-warm-gray-500 hover:text-red-600 hover:bg-warm-gray-50 transition-colors w-full"
+                  >
+                    <span className="w-5 text-center text-base">&#8617;</span>
+                    Sign out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>

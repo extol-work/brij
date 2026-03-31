@@ -116,12 +116,31 @@ export async function GET(
     )
   );
 
-  // Determine primary community (highest role, then earliest join)
+  // Determine primary community (highest role, then most organized activities, then earliest join)
   const roleWeight = { coordinator: 3, member: 1 };
+  // Count activities organized per group for primary selection
+  const orgCountByGroup = new Map<string, number>();
+  if (memberships.length > 0) {
+    for (const m of memberships) {
+      const [result] = await db
+        .select({ count: count() })
+        .from(activities)
+        .where(
+          and(
+            eq(activities.coordinatorId, userId),
+            eq(activities.groupId, m.groupId)
+          )
+        );
+      orgCountByGroup.set(m.groupId, result?.count || 0);
+    }
+  }
   const sorted = [...memberships].sort((a, b) => {
     const wa = roleWeight[a.role as keyof typeof roleWeight] || 0;
     const wb = roleWeight[b.role as keyof typeof roleWeight] || 0;
     if (wb !== wa) return wb - wa;
+    const orgA = orgCountByGroup.get(a.groupId) || 0;
+    const orgB = orgCountByGroup.get(b.groupId) || 0;
+    if (orgB !== orgA) return orgB - orgA;
     return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
   });
   const primary = sorted[0] || null;
@@ -243,27 +262,12 @@ export async function GET(
     }));
   }
 
-  // Coordinator vs participant breakdown from attendances
-  const [coordinatorCount] = await db
-    .select({ count: count() })
-    .from(attendances)
-    .where(
-      and(
-        eq(attendances.userId, userId),
-        eq(attendances.status, "checked_in"),
-        eq(attendances.role, "coordinator")
-      )
-    );
-  const [participantCount] = await db
-    .select({ count: count() })
-    .from(attendances)
-    .where(
-      and(
-        eq(attendances.userId, userId),
-        eq(attendances.status, "checked_in"),
-        eq(attendances.role, "participant")
-      )
-    );
+  // Role breakdown: "organized" = activities where user is coordinatorId
+  // This is the source of truth (works for events created before coordinator role feature)
+  const organizedCount = coordinated?.count || 0;
+  const totalAttended = attended?.count || 0;
+  // Participated = attended minus the ones they organized (avoid double-counting)
+  const participatedCount = Math.max(0, totalAttended - organizedCount);
 
   // Journal entries as quotes (authenticated+, limit 5)
   const quotes = await getQuotes(userId, 5);
@@ -320,8 +324,8 @@ export async function GET(
     communities: communitiesData,
     highlights,
     roleBreakdown: {
-      coordinated: coordinatorCount?.count || 0,
-      participated: participantCount?.count || 0,
+      coordinated: organizedCount,
+      participated: participatedCount,
     },
     contributionBreakdown,
     quotes,
