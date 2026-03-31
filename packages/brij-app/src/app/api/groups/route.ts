@@ -3,9 +3,9 @@ import { getAuthUser } from "@/lib/auth";
 import { db } from "@/db";
 import { groups, groupMemberships, communityPlans } from "@/db/schema";
 import type { CommunityTier } from "@/lib/community-plan";
-import { eq, desc, and, isNull, inArray } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { pushGroupCreated } from "@/lib/cortex";
-import { isPaidTier } from "@/lib/community-plan";
+import { resolveUserTier, getMaxGroups } from "@/lib/community-plan";
 
 /** GET /api/groups — list groups the user belongs to */
 export async function GET() {
@@ -42,27 +42,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  // Check group creation limit — free tier = 3, paid = unlimited
+  // Check group creation limit via billing waterfall
   const userGroups = await db
     .select({ id: groups.id })
     .from(groups)
     .where(and(eq(groups.createdById, user.id), isNull(groups.deletedAt)));
 
-  if (userGroups.length >= 3) {
-    // Only enforce if ALL existing groups are free tier
-    const groupIds = userGroups.map((g) => g.id);
-    const plans = await db
-      .select({ tier: communityPlans.tier })
-      .from(communityPlans)
-      .where(inArray(communityPlans.groupId, groupIds));
-
-    const hasPaid = plans.some((p) => isPaidTier(p.tier));
-    if (!hasPaid) {
-      return NextResponse.json(
-        { error: "Free accounts can create up to 3 groups. Upgrade a group to create more." },
-        { status: 403 }
-      );
-    }
+  const tier = await resolveUserTier(user.id);
+  const max = getMaxGroups(tier);
+  if (userGroups.length >= max) {
+    return NextResponse.json(
+      { error: `Your plan allows up to ${max} groups. Upgrade to create more.` },
+      { status: 403 }
+    );
   }
 
   const result = await db.transaction(async (tx) => {

@@ -328,7 +328,7 @@ export const platformIdentities = pgTable("platform_identities", {
   unique().on(table.platform, table.platformUserId, table.groupId),
 ]);
 
-// --- Community Plans ---
+// --- Billing ---
 
 export const communityPlanTierEnum = pgEnum("community_plan_tier", [
   "free",
@@ -338,6 +338,13 @@ export const communityPlanTierEnum = pgEnum("community_plan_tier", [
   "league",
 ]);
 
+export const billingProviderEnum = pgEnum("billing_provider", [
+  "stripe",
+  "lemonsqueezy",
+  "manual",
+]);
+
+// Group-level self-pay plan
 export const communityPlans = pgTable("community_plans", {
   id: uuid("id").defaultRandom().primaryKey(),
   groupId: uuid("group_id")
@@ -345,6 +352,55 @@ export const communityPlans = pgTable("community_plans", {
     .notNull()
     .unique(),
   tier: communityPlanTierEnum("tier").default("free").notNull(),
+  billingProvider: billingProviderEnum("billing_provider"),
+  billingCustomerId: text("billing_customer_id"),
+  billingSubscriptionId: text("billing_subscription_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Organizations — billing containers that cover groups
+export const organizations = pgTable("organizations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  tier: communityPlanTierEnum("tier").default("free").notNull(),
+  groupQuota: integer("group_quota").default(10).notNull(),
+  billingProvider: billingProviderEnum("billing_provider"),
+  billingCustomerId: text("billing_customer_id"),
+  billingSubscriptionId: text("billing_subscription_id"),
+  createdById: uuid("created_by_id")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Org-to-group billing relationship (no permissions — purely financial)
+export const orgMemberships = pgTable("org_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id")
+    .references(() => organizations.id, { onDelete: "cascade" })
+    .notNull(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  billingActive: boolean("billing_active").default(true).notNull(),
+  addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique().on(table.orgId, table.groupId),
+]);
+
+// Individual user-level plan
+export const userPlans = pgTable("user_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  tier: communityPlanTierEnum("tier").default("free").notNull(),
+  billingProvider: billingProviderEnum("billing_provider"),
+  billingCustomerId: text("billing_customer_id"),
+  billingSubscriptionId: text("billing_subscription_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
