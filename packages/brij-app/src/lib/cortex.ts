@@ -63,7 +63,7 @@ export async function pushEventClosed(
   activityId: string,
   communityId: string,
   closedAt: string,
-  attendees: { derivationInput: string; displayName: string; joinedAt: string | null }[],
+  attendees: { derivationInput: string; displayName: string; joinedAt: string | null; role: "participant" | "coordinator" }[],
   tier: "free" | "paid" = "free"
 ) {
   if (attendees.length === 0) return;

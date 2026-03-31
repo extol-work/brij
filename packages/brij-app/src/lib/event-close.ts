@@ -9,6 +9,7 @@ import { db } from "@/db";
 import { attendances, users, platformIdentities } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { pushEventClosed } from "@/lib/cortex";
+import { getGroupTier } from "@/lib/community-plan";
 
 function getRotationEpoch(): number {
   // 30-day epochs (2,592,000 seconds)
@@ -38,7 +39,7 @@ export async function pushActivityClosed(
   if (checkins.length === 0) return;
 
   // Build attendee list with derivation inputs
-  const attendeeList: { derivationInput: string; displayName: string; joinedAt: string | null }[] = [];
+  const attendeeList: { derivationInput: string; displayName: string; joinedAt: string | null; role: "participant" | "coordinator" }[] = [];
 
   for (const checkin of checkins) {
     let derivationInput: string;
@@ -69,14 +70,24 @@ export async function pushActivityClosed(
       continue;
     }
 
+    // Role from attendance record, or coordinator if they're the activity creator
+    const role = checkin.role === "coordinator" || checkin.userId === coordinatorId
+      ? "coordinator" as const
+      : "participant" as const;
+
     attendeeList.push({
       derivationInput,
       displayName,
       joinedAt: checkin.checkedInAt?.toISOString() || null,
+      role,
     });
   }
 
   if (attendeeList.length === 0) return;
+
+  // Look up community tier for attestation routing
+  const tier = groupId ? await getGroupTier(groupId) : "free";
+  const cortexTier = tier === "free" ? "free" : "paid";
 
   // Push to Cortex — fire and forget
   pushEventClosed(
@@ -84,6 +95,6 @@ export async function pushActivityClosed(
     communityId,
     closedAt.toISOString(),
     attendeeList,
-    "free" // Default to free tier until EXT-149 community plans
+    cortexTier
   ).catch(() => {});
 }

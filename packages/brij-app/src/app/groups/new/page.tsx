@@ -38,6 +38,7 @@ export default function NewGroupOnboarding() {
 
   // Result
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [createdGroup, setCreatedGroup] = useState<{ id: string; joinCode: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -94,6 +95,8 @@ export default function NewGroupOnboarding() {
     });
 
     if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setCreateError(data?.error || "Failed to create group");
       setCreating(false);
       return;
     }
@@ -333,8 +336,12 @@ export default function NewGroupOnboarding() {
               You can always add more people later. Share the link or add them by email.
             </p>
 
+            {createError && (
+              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-3">{createError}</p>
+            )}
+
             <button
-              onClick={handleCreate}
+              onClick={() => { setCreateError(null); handleCreate(); }}
               disabled={creating}
               className="w-full mt-5 py-3.5 bg-violet-600 text-white rounded-xl text-base font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50"
             >

@@ -39,6 +39,11 @@ export const contributionTypeEnum = pgEnum("contribution_type", [
   "other",
 ]);
 
+export const attendanceRoleEnum = pgEnum("attendance_role", [
+  "participant",
+  "coordinator",
+]);
+
 export const groupRoleEnum = pgEnum("group_role", [
   "coordinator",
   "member",
@@ -216,6 +221,7 @@ export const attendances = pgTable("attendances", {
   checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
   platformIdentityId: uuid("platform_identity_id")
     .references(() => platformIdentities.id),
+  role: attendanceRoleEnum("role").default("participant").notNull(),
   attestationLevel: text("attestation_level").default("none"), // 'none' | 'merkle' | 'individual'
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
@@ -321,6 +327,27 @@ export const platformIdentities = pgTable("platform_identities", {
 }, (table) => [
   unique().on(table.platform, table.platformUserId, table.groupId),
 ]);
+
+// --- Community Plans ---
+
+export const communityPlanTierEnum = pgEnum("community_plan_tier", [
+  "free",
+  "starter",
+  "team",
+  "organization",
+  "league",
+]);
+
+export const communityPlans = pgTable("community_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  tier: communityPlanTierEnum("tier").default("free").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 // --- Milestones ---
 
