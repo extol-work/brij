@@ -2,8 +2,16 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { BrijLogo } from "@/components/brij-logo";
+import { firstName } from "@/lib/names";
+
+interface GroupMember {
+  userId: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+}
 
 function NewActivityInner() {
   const { status } = useSession();
@@ -16,6 +24,26 @@ function NewActivityInner() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("weekly");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [selectedCoordinators, setSelectedCoordinators] = useState<string[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch group members and current user for coordinator picker
+  useEffect(() => {
+    if (!authenticated || !groupId) return;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((data) => { if (data.id) setCurrentUserId(data.id); });
+    fetch(`/api/groups/${groupId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.members) {
+          setGroupMembers(
+            data.members.filter((m: GroupMember & { status: string }) => m.status === "active")
+          );
+        }
+      });
+  }, [authenticated, groupId]);
 
   if (!authenticated) {
     return (
@@ -57,6 +85,7 @@ function NewActivityInner() {
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       isPrivate: groupId ? isPrivate : false,
+      coordinatorIds: selectedCoordinators.length > 0 ? selectedCoordinators : undefined,
       startsAt: (() => {
         const date = form.get("date") as string;
         const time = parseTime((form.get("time") as string) || "");
@@ -224,6 +253,47 @@ function NewActivityInner() {
                   }`}
                 />
               </button>
+            </div>
+          )}
+
+          {/* Coordinators — group activities only, hidden if only 1 member */}
+          {groupId && currentUserId && groupMembers.filter((m) => m.userId !== currentUserId).length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-bark-900 mb-1">
+                Coordinators
+              </label>
+              <p className="text-xs text-warm-gray-400 mb-2">
+                You&apos;re automatically a coordinator. Add up to 4 more.
+              </p>
+              <div className="space-y-1.5">
+                {groupMembers
+                  .filter((m) => m.userId !== currentUserId)
+                  .map((m) => {
+                    const selected = selectedCoordinators.includes(m.userId);
+                    return (
+                      <button
+                        key={m.userId}
+                        type="button"
+                        disabled={!selected && selectedCoordinators.length >= 4}
+                        onClick={() => {
+                          setSelectedCoordinators((prev) =>
+                            selected
+                              ? prev.filter((id) => id !== m.userId)
+                              : [...prev, m.userId]
+                          );
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors ${
+                          selected
+                            ? "border-violet-400 bg-violet-50 text-violet-700"
+                            : "border-warm-gray-200 text-bark-900 hover:border-warm-gray-400"
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
+                      >
+                        <span>{firstName(m.name || m.email || "Member")}</span>
+                        {selected && <span className="text-xs font-medium">Coordinator</span>}
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
           )}
 

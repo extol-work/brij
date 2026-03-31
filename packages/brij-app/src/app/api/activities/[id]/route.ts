@@ -122,6 +122,7 @@ export async function PATCH(
       .returning();
 
     // Auto-RSVP all registered attendees — same crew carries forward, they can drop out
+    // Preserve coordinator roles so they carry into the next occurrence
     const allAttendees = await db.query.attendances.findMany({
       where: eq(attendances.activityId, id),
     });
@@ -131,6 +132,7 @@ export async function PATCH(
         activityId: nextActivity.id,
         userId: a.userId!,
         status: "coming" as const,
+        role: a.role || ("participant" as const),
       }));
     // Add coordinator if not already in the list
     if (!rsvpValues.some((r) => r.userId === existing.coordinatorId)) {
@@ -138,6 +140,7 @@ export async function PATCH(
         activityId: nextActivity.id,
         userId: existing.coordinatorId,
         status: "coming",
+        role: "coordinator" as const,
       });
     }
     if (rsvpValues.length > 0) {

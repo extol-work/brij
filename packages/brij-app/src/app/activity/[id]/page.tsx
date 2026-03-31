@@ -146,6 +146,10 @@ export default function ActivityDetail() {
   const closureRef = useRef<HTMLDivElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [coordinators, setCoordinators] = useState<{ userId: string; name: string; isCreator: boolean }[]>([]);
+  const [groupMembers, setGroupMembers] = useState<{ userId: string; name: string | null; email: string | null }[]>([]);
+  const [showAddCoordinator, setShowAddCoordinator] = useState(false);
+  const [addingCoordinator, setAddingCoordinator] = useState(false);
 
   useEffect(() => {
     fetch(`/api/activities/${id}`)
@@ -155,6 +159,11 @@ export default function ActivityDetail() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setAttendees(data);
+      });
+    fetch(`/api/activities/${id}/coordinators`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCoordinators(data);
       });
   }, [id]);
 
@@ -171,6 +180,27 @@ export default function ActivityDetail() {
       closureRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [showClosure]);
+
+  // Fetch group members for coordinator picker
+  useEffect(() => {
+    if (!activity?.groupId || !isCoordinator) return;
+    fetch(`/api/groups/${activity.groupId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.members) {
+          setGroupMembers(
+            data.members
+              .filter((m: { status: string }) => m.status === "active")
+              .map((m: { userId: string; name: string | null; email: string | null }) => ({
+                userId: m.userId,
+                name: m.name,
+                email: m.email,
+              }))
+          );
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity?.groupId, currentUserId]);
 
   // Auto-show inline title edit for "Untitled activity"
   useEffect(() => {
@@ -601,6 +631,98 @@ export default function ActivityDetail() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Coordinators section */}
+        {coordinators.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-bark-900 mb-2">
+              Coordinators ({coordinators.length}/5)
+            </h3>
+            <div className="space-y-1.5">
+              {coordinators.map((c) => (
+                <div
+                  key={c.userId}
+                  className="flex items-center justify-between px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-violet-700 font-medium">{firstName(c.name)}</span>
+                    {c.isCreator && (
+                      <span className="text-xs text-violet-400">Creator</span>
+                    )}
+                  </div>
+                  {isCoordinator && !c.isCreator && activity.status === "open" && (
+                    <button
+                      onClick={async () => {
+                        const res = await fetch(`/api/activities/${id}/coordinators`, {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ userId: c.userId }),
+                        });
+                        if (res.ok) {
+                          setCoordinators((prev) => prev.filter((p) => p.userId !== c.userId));
+                        }
+                      }}
+                      className="text-xs text-warm-gray-400 hover:text-red-500"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Add coordinator — only for open group activities with room */}
+            {isCoordinator && activity.status === "open" && activity.groupId && coordinators.length < 5 && (
+              <>
+                {!showAddCoordinator ? (
+                  <button
+                    onClick={() => setShowAddCoordinator(true)}
+                    className="mt-2 text-sm text-violet-600 hover:text-violet-800 font-medium"
+                  >
+                    + Add coordinator
+                  </button>
+                ) : (
+                  <div className="mt-2 space-y-1.5">
+                    {groupMembers
+                      .filter((m) => !coordinators.some((c) => c.userId === m.userId))
+                      .map((m) => (
+                        <button
+                          key={m.userId}
+                          disabled={addingCoordinator}
+                          onClick={async () => {
+                            setAddingCoordinator(true);
+                            const res = await fetch(`/api/activities/${id}/coordinators`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ userId: m.userId }),
+                            });
+                            if (res.ok) {
+                              setCoordinators((prev) => [
+                                ...prev,
+                                { userId: m.userId, name: m.name || m.email || "Member", isCreator: false },
+                              ]);
+                            }
+                            setAddingCoordinator(false);
+                            if (coordinators.length >= 4) setShowAddCoordinator(false);
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 border border-warm-gray-200 rounded-lg text-sm hover:border-violet-300 hover:bg-violet-50 transition-colors disabled:opacity-50"
+                        >
+                          <span>{firstName(m.name || m.email || "Member")}</span>
+                          <span className="text-xs text-violet-500">Add</span>
+                        </button>
+                      ))}
+                    <button
+                      onClick={() => setShowAddCoordinator(false)}
+                      className="text-xs text-warm-gray-400 hover:text-bark-900"
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {/* Photo upload — coordinator only */}

@@ -107,7 +107,17 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency, groupId, isPrivate } = body;
+  const { mode, title, description, startsAt, endsAt, location, isRecurring, recurringFrequency, groupId, isPrivate, coordinatorIds } = body;
+
+  // Validate coordinatorIds if provided
+  const extraCoordinators: string[] = [];
+  if (coordinatorIds && Array.isArray(coordinatorIds)) {
+    const unique = [...new Set(coordinatorIds.filter((id: unknown) => typeof id === "string" && id !== user.id))] as string[];
+    if (unique.length > 4) {
+      return NextResponse.json({ error: "Maximum 5 coordinators (including yourself)" }, { status: 400 });
+    }
+    extraCoordinators.push(...unique);
+  }
 
   // "Now" mode: instant live activity with 12h auto-close
   if (mode === "now") {
@@ -127,13 +137,27 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    // Auto-check-in the coordinator (they're there — that's why they tapped Now)
+    // Auto-check-in the creator as coordinator
     await db.insert(attendances).values({
       activityId: activity.id,
       userId: user.id,
       status: "checked_in",
       checkedInAt: now,
+      role: "coordinator",
     });
+
+    // Check in extra coordinators
+    if (extraCoordinators.length > 0) {
+      await db.insert(attendances).values(
+        extraCoordinators.map((uid) => ({
+          activityId: activity.id,
+          userId: uid,
+          status: "checked_in" as const,
+          checkedInAt: now,
+          role: "coordinator" as const,
+        }))
+      );
+    }
 
     return NextResponse.json(activity, { status: 201 });
   }
@@ -170,12 +194,25 @@ export async function POST(req: NextRequest) {
     activity.seriesId = activity.id;
   }
 
-  // Auto-RSVP the creator as "coming"
+  // Auto-RSVP the creator as coordinator
   await db.insert(attendances).values({
     activityId: activity.id,
     userId: user.id,
     status: "coming",
+    role: "coordinator",
   });
+
+  // RSVP extra coordinators
+  if (extraCoordinators.length > 0) {
+    await db.insert(attendances).values(
+      extraCoordinators.map((uid) => ({
+        activityId: activity.id,
+        userId: uid,
+        status: "coming" as const,
+        role: "coordinator" as const,
+      }))
+    );
+  }
 
   return NextResponse.json(activity, { status: 201 });
 }
