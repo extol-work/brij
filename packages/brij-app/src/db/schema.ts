@@ -62,6 +62,30 @@ export const groupTypeEnum = pgEnum("group_type", [
   "other",
 ]);
 
+export const trackEnum = pgEnum("track", [
+  "governance_only",
+  "credit_economy",
+  "full_economic",
+]);
+
+export const entityTypeEnum = pgEnum("entity_type", [
+  "informal",
+  "una",
+  "duna",
+  "nonprofit_corp",
+  "llc",
+  "fiscal_sponsored",
+]);
+
+export const taxExemptStatusEnum = pgEnum("tax_exempt_status", [
+  "501c3",
+  "501c4",
+  "501c6",
+  "501c7",
+  "pending",
+  "none",
+]);
+
 // --- Auth.js tables ---
 
 export const users = pgTable("users", {
@@ -134,6 +158,13 @@ export const groups = pgTable("groups", {
   coverImageUrl: text("cover_image_url"),
   platform: text("platform"), // 'discord', 'telegram', null
   platformGuildId: text("platform_guild_id"), // Discord guild ID, Telegram chat ID
+  // Track + entity metadata (EXT-145)
+  track: trackEnum("track").default("governance_only").notNull(),
+  entityType: entityTypeEnum("entity_type"),
+  ein: text("ein"), // EIN for tax-exempt orgs
+  taxExemptStatus: taxExemptStatusEnum("tax_exempt_status"),
+  stateOfIncorporation: text("state_of_incorporation"),
+  fiscalSponsorId: uuid("fiscal_sponsor_id").references(() => organizations.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
