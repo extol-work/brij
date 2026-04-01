@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import Apple from "next-auth/providers/apple";
+// import Apple from "next-auth/providers/apple";
 import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
@@ -15,7 +15,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }),
   trustHost: true,
   providers: [
-    Apple,
+    // Apple — re-enable when Apple Developer Program enrollment is approved
+    // Apple,
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
