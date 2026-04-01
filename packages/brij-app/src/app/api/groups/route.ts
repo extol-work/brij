@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { name, description, color, type, membershipMode } = body;
+  const { name, description, color, type, membershipMode, track } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
         color: color || "#7c3aed",
         joinCode,
         membershipMode: membershipMode || "invite_only",
+        track: track === "credit_economy" ? "credit_economy" : "governance_only",
         createdById: user.id,
       })
       .returning();

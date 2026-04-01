@@ -17,6 +17,23 @@ type GroupTypeEntry = (typeof GROUP_TYPES)[number];
 
 type GroupType = (typeof GROUP_TYPES)[number]["id"];
 
+type Track = "governance_only" | "credit_economy";
+
+const TRACKS = [
+  {
+    id: "governance_only" as Track,
+    name: "Transparent governance",
+    desc: "Track participation, manage budgets, and make decisions together. No tokens or credits.",
+    hint: "Best for nonprofits, clubs, and community orgs",
+  },
+  {
+    id: "credit_economy" as Track,
+    name: "Credit economy",
+    desc: "Everything above, plus members earn credits for participation that carry weight in governance.",
+    hint: "Best for collectives, bands, OSS projects",
+  },
+] as const;
+
 export default function NewGroupOnboarding() {
   const { status } = useSession();
   const router = useRouter();
@@ -25,11 +42,14 @@ export default function NewGroupOnboarding() {
   // Step 1
   const [groupType, setGroupType] = useState<GroupType>("creative");
 
-  // Step 2
+  // Step 2 (track)
+  const [selectedTrack, setSelectedTrack] = useState<Track>("governance_only");
+
+  // Step 3
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  // Step 3
+  // Step 4
   const [membershipMode, setMembershipMode] = useState<"invite_only" | "open">("invite_only");
   const [inviteEmails, setInviteEmails] = useState<{ email: string; status: "checking" | "found" | "not_found"; name?: string | null }[]>([]);
   const [emailInput, setEmailInput] = useState("");
@@ -91,6 +111,7 @@ export default function NewGroupOnboarding() {
         type: groupType,
         color: selectedType.color,
         membershipMode,
+        track: selectedTrack,
       }),
     });
 
@@ -127,7 +148,7 @@ export default function NewGroupOnboarding() {
       <div className="max-w-[480px] mx-auto px-4 py-4 pb-20">
         {/* Progress bar */}
         <div className="flex gap-1.5 mb-6">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
               className={`flex-1 h-1 rounded-full ${
@@ -141,7 +162,7 @@ export default function NewGroupOnboarding() {
         {step === 1 && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
             <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
-              Step 1 of 3
+              Step 1 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
               What kind of group is this?
@@ -187,7 +208,10 @@ export default function NewGroupOnboarding() {
             </p>
 
             <button
-              onClick={() => setStep(2)}
+              onClick={() => {
+                setSelectedTrack(groupType === "nonprofit" ? "governance_only" : "credit_economy");
+                setStep(2);
+              }}
               className="w-full mt-5 py-3.5 bg-violet-600 text-white rounded-xl text-base font-semibold hover:bg-violet-700 transition-colors"
             >
               Next
@@ -195,11 +219,52 @@ export default function NewGroupOnboarding() {
           </div>
         )}
 
-        {/* Step 2: Name */}
+        {/* Step 2: Track */}
         {step === 2 && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
             <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
-              Step 2 of 3
+              Step 2 of 4
+            </span>
+            <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
+              How should governance work?
+            </h2>
+
+            <div className="flex flex-col gap-3">
+              {TRACKS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTrack(t.id)}
+                  className={`p-5 border-2 rounded-xl text-left transition-all ${
+                    selectedTrack === t.id
+                      ? "border-violet-600 bg-violet-50"
+                      : "border-[#e8e0d4] hover:border-[#E8D5BC] hover:bg-[#FDF8F0]"
+                  }`}
+                >
+                  <div className="text-sm font-semibold mb-1">{t.name}</div>
+                  <div className="text-[13px] text-[#666] leading-snug">{t.desc}</div>
+                  <div className="text-xs text-[#999] mt-2">{t.hint}</div>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[13px] text-[#999] mt-4">
+              You can change this later in group settings.
+            </p>
+
+            <button
+              onClick={() => setStep(3)}
+              className="w-full mt-5 py-3.5 bg-violet-600 text-white rounded-xl text-base font-semibold hover:bg-violet-700 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* Step 3: Name */}
+        {step === 3 && (
+          <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
+            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
+              Step 3 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
               Name your group
@@ -234,7 +299,7 @@ export default function NewGroupOnboarding() {
             </p>
 
             <button
-              onClick={() => setStep(3)}
+              onClick={() => setStep(4)}
               disabled={!name.trim()}
               className="w-full mt-5 py-3.5 bg-violet-600 text-white rounded-xl text-base font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50"
             >
@@ -243,11 +308,11 @@ export default function NewGroupOnboarding() {
           </div>
         )}
 
-        {/* Step 3: Invite */}
-        {step === 3 && !createdGroup && (
+        {/* Step 4: Invite */}
+        {step === 4 && !createdGroup && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
             <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
-              Step 3 of 3
+              Step 4 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
               How do people join?
