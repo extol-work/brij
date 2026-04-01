@@ -13,7 +13,7 @@ const ADMIN_EMAIL = "ken@extol.work";
  * Regenerate the most recent 20 closed activities' Extol Card images.
  * Admin-only (ken@extol.work). One-time use after card template changes.
  */
-export async function POST(req: NextRequest) {
+async function handleRegenerate(req: NextRequest) {
   const user = await getAuthUser();
   if (!user || user.email !== ADMIN_EMAIL) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -45,4 +45,12 @@ export async function POST(req: NextRequest) {
     total: recentActivities.length,
     results,
   });
+}
+
+export async function POST(req: NextRequest) {
+  return handleRegenerate(req);
+}
+
+export async function GET(req: NextRequest) {
+  return handleRegenerate(req);
 }

@@ -29,7 +29,7 @@ const TRACKS = [
   {
     id: "credit_economy" as Track,
     name: "Credit economy",
-    desc: "Everything above, plus members earn credits for participation that carry weight in governance.",
+    desc: "Track contributions with Credits that members earn, spend, and settle with.",
     hint: "Best for collectives, bands, OSS projects",
   },
 ] as const;
@@ -229,33 +229,58 @@ export default function NewGroupOnboarding() {
               How should governance work?
             </h2>
 
-            <div className="flex flex-col gap-3">
-              {TRACKS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedTrack(t.id)}
-                  className={`p-5 border-2 rounded-xl text-left transition-all ${
-                    selectedTrack === t.id
-                      ? "border-violet-600 bg-violet-50"
-                      : "border-[#e8e0d4] hover:border-[#E8D5BC] hover:bg-[#FDF8F0]"
-                  }`}
-                >
-                  <div className="text-sm font-semibold mb-1">{t.name}</div>
-                  <div className="text-[13px] text-[#666] leading-snug">{t.desc}</div>
-                  <div className="text-xs text-[#999] mt-2">{t.hint}</div>
-                </button>
-              ))}
-            </div>
+            {groupType === "nonprofit" ? (
+              <>
+                <div className="p-5 border-2 border-violet-600 bg-violet-50 rounded-xl text-left">
+                  <div className="text-sm font-semibold mb-1">Transparent governance</div>
+                  <div className="text-[13px] text-[#666] leading-snug">
+                    Your community will use transparent governance — decisions, contributions, and trust built through visibility.
+                  </div>
+                </div>
 
-            <p className="text-[13px] text-[#999] mt-4">
-              You can change this later in group settings.
-            </p>
+                <p className="text-[12px] text-[#999] mt-4">
+                  Some communities also use credit economies.{" "}
+                  <a
+                    href="https://docs.extol.work/tracks"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-[#666]"
+                  >
+                    Learn more &rarr;
+                  </a>
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3">
+                  {TRACKS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTrack(t.id)}
+                      className={`p-5 border-2 rounded-xl text-left transition-all ${
+                        selectedTrack === t.id
+                          ? "border-violet-600 bg-violet-50"
+                          : "border-[#e8e0d4] hover:border-[#E8D5BC] hover:bg-[#FDF8F0]"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold mb-1">{t.name}</div>
+                      <div className="text-[13px] text-[#666] leading-snug">{t.desc}</div>
+                      <div className="text-xs text-[#999] mt-2">{t.hint}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <p className="text-[13px] text-[#999] mt-4">
+                  You can change this later in group settings.
+                </p>
+              </>
+            )}
 
             <button
               onClick={() => setStep(3)}
               className="w-full mt-5 py-3.5 bg-violet-600 text-white rounded-xl text-base font-semibold hover:bg-violet-700 transition-colors"
             >
-              Next
+              Continue
             </button>
           </div>
         )}
