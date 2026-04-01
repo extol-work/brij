@@ -27,6 +27,7 @@ function SignInForm() {
           Sign in to join
         </p>
 
+        {/* Apple sign-in disabled until Apple Developer Program enrollment is approved
         <button
           onClick={() => signIn("apple", { callbackUrl })}
           className="w-full py-3 border border-warm-gray-200 rounded-lg text-bark-900 font-medium hover:border-terracotta-400 transition-colors flex items-center justify-center gap-2 mb-4"
@@ -36,6 +37,7 @@ function SignInForm() {
           </svg>
           Continue with Apple
         </button>
+        */}
 
         <button
           onClick={() => signIn("google", { callbackUrl })}

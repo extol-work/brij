@@ -755,9 +755,19 @@ export default function Dashboard() {
           <BrijLogo />
           <Link
             href="/me"
-            className="w-9 h-9 rounded-lg border border-warm-gray-200 bg-white flex items-center justify-center text-warm-gray-400 hover:text-bark-900 transition-colors"
+            className="w-9 h-9 rounded-full overflow-hidden border border-warm-gray-200 flex items-center justify-center transition-colors"
           >
-            <span className="text-base">&#128100;</span>
+            {session?.user?.image ? (
+              <img
+                src={session.user.image}
+                alt={session.user.name || "Profile"}
+                className="w-9 h-9 rounded-full object-cover"
+              />
+            ) : (
+              <span className="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-white text-sm font-semibold">
+                {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?"}
+              </span>
+            )}
           </Link>
         </div>
       </header>
