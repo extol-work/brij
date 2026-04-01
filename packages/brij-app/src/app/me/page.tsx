@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -148,7 +148,7 @@ function StatCell({
         {num}
       </div>
       <div
-        className={`text-[10px] mt-0.5 ${
+        className={`text-xs mt-0.5 ${
           highlight ? "text-amber-700" : "text-warm-gray-500"
         }`}
       >
@@ -171,7 +171,7 @@ function FeedItemRow({
 }) {
   const content = (
     <div className="py-2 border-b border-warm-gray-100 last:border-b-0">
-      <div className="text-[11px] text-warm-gray-400 font-medium flex items-center gap-1.5">
+      <div className="text-xs text-warm-gray-400 font-medium flex items-center gap-1.5">
         {formatDate(item.date)}
         {showGroup && groupName && (
           <>
@@ -184,12 +184,12 @@ function FeedItemRow({
           </>
         )}
       </div>
-      <div className="text-[13px] font-medium text-bark-900">{item.title}</div>
+      <div className="text-sm font-medium text-bark-900">{item.title}</div>
       {item.type === "activity" && item.detail && (
-        <div className="text-xs text-warm-gray-500 mt-0.5">{item.detail}</div>
+        <div className="text-sm text-warm-gray-500 mt-0.5">{item.detail}</div>
       )}
       {item.type === "journal" && "text" in item && item.text && (
-        <div className="text-xs text-warm-gray-500 mt-0.5 italic">
+        <div className="text-sm text-warm-gray-500 mt-0.5 italic">
           &ldquo;{item.text.length > 100 ? item.text.slice(0, 100) + "…" : item.text}&rdquo;
         </div>
       )}
@@ -223,7 +223,7 @@ function MiniCard({ card }: { card: GroupCard }) {
         <div className="absolute inset-0 bg-gradient-to-br from-bark-700 to-bark-500" />
       )}
       <div className="relative z-10 text-center px-1">
-        <div className="text-[10px] text-white font-medium drop-shadow-sm">
+        <div className="text-xs text-white font-medium drop-shadow-sm">
           {card.date ? formatDate(card.date) : ""}
         </div>
       </div>
@@ -294,11 +294,11 @@ export default function MePage() {
         canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.9)
       );
       const formData = new FormData();
-      formData.append("file", blob, "avatar.jpg");
+      formData.append("avatar", blob, "avatar.jpg");
       const res = await fetch("/api/users/avatar", { method: "POST", body: formData });
       if (res.ok) {
-        const { url } = await res.json();
-        setProfile({ ...profile, image: url });
+        const { image } = await res.json();
+        setProfile({ ...profile, image });
       }
     } finally {
       setUploading(false);
@@ -358,17 +358,42 @@ export default function MePage() {
   return (
     <div className="min-h-screen bg-cream pb-20">
       <div className="max-w-md mx-auto">
+        {/* Top bar */}
+        <div className="flex items-center justify-end gap-2 pt-4 px-5">
+          <Link
+            href="/settings"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-gray-400 hover:text-bark-900 transition-colors"
+            title="Settings"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </Link>
+          <button
+            onClick={() => signOut()}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-gray-400 hover:text-red-500 transition-colors"
+            title="Sign out"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </div>
+
         {/* Profile header */}
-        <div className="text-center pt-12 pb-3 px-5">
+        <div className="text-center pt-2 pb-3 px-5">
           <div className="relative inline-block">
             {profile.image ? (
               <img
                 src={profile.image}
                 alt={profile.name}
-                className="w-16 h-16 rounded-full object-cover mx-auto"
+                className="w-24 h-24 rounded-full object-cover mx-auto"
               />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center text-white text-2xl font-semibold mx-auto">
+              <div className="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center text-white text-3xl font-semibold mx-auto">
                 {getInitials(profile.name)}
               </div>
             )}
@@ -394,19 +419,19 @@ export default function MePage() {
               onChange={handleAvatarUpload}
             />
           </div>
-          <div className="text-lg font-semibold mt-2">{profile.name}</div>
-          <div className="text-[11px] text-warm-gray-500">
+          <div className="text-[22px] font-bold tracking-tight mt-2">{profile.name}</div>
+          <div className="text-xs text-warm-gray-400">
             On brij since {formatSince(profile.since)}
           </div>
         </div>
 
         {/* Tab row */}
         <div className="mx-5 mb-4">
-          <div className="flex bg-white rounded-xl border border-warm-gray-200 overflow-hidden">
+          <div className="flex bg-white rounded-xl border border-warm-gray-200 overflow-x-auto">
             {/* Summary tab */}
             <button
               onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
-              className={`flex-1 py-2.5 px-1 text-center text-[11px] font-medium border-r border-warm-gray-200 transition-colors ${
+              className={`shrink-0 min-w-[72px] flex-1 py-2.5 px-2 text-center text-xs font-medium border-r border-warm-gray-200 transition-colors ${
                 activeTab === "summary"
                   ? "bg-bark-900 text-cream font-semibold"
                   : "text-warm-gray-400 hover:bg-warm-gray-50"
@@ -421,7 +446,7 @@ export default function MePage() {
               <button
                 key={g.groupId}
                 onClick={() => { setActiveTab(g.groupId); setShowAllFeed(false); }}
-                className={`flex-1 py-2.5 px-1 text-center text-[11px] font-medium transition-colors ${
+                className={`shrink-0 min-w-[72px] flex-1 py-2.5 px-2 text-center text-xs font-medium transition-colors ${
                   i < profile.groups.length - 1 ? "border-r border-warm-gray-200" : ""
                 } ${
                   activeTab === g.groupId
@@ -492,7 +517,7 @@ function SummaryTab({
   return (
     <>
       {/* Aggregate stats */}
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+      <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
         Across All Groups
       </div>
       <div className="grid grid-cols-2 gap-2 mb-4">
@@ -509,7 +534,7 @@ function SummaryTab({
       <div className="h-px bg-warm-gray-200 my-4" />
 
       {/* Cross-community feed */}
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+      <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
         Recent (all groups)
       </div>
       {visibleFeed.length > 0 ? (
@@ -526,7 +551,7 @@ function SummaryTab({
           {!showAllFeed && crossFeed.length > 4 && (
             <button
               onClick={() => setShowAllFeed(true)}
-              className="text-xs text-violet-600 font-medium py-1.5"
+              className="text-sm text-violet-600 font-medium py-1.5"
             >
               View all →
             </button>
@@ -540,11 +565,11 @@ function SummaryTab({
       {allMilestones.length > 0 && (
         <>
           <div className="h-px bg-warm-gray-200 my-4" />
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
             Milestones
           </div>
           {allMilestones.map((ms, i) => (
-            <div key={i} className="flex items-center gap-2.5 py-1.5 text-xs text-warm-gray-500">
+            <div key={i} className="flex items-center gap-2.5 py-1.5 text-sm text-warm-gray-500">
               <span className="text-base">{ms.icon}</span>
               <span>{ms.text}</span>
             </div>
@@ -558,17 +583,17 @@ function SummaryTab({
       <button
         onClick={onExport}
         disabled={exporting}
-        className="w-full py-2.5 rounded-xl border border-warm-gray-200 bg-white text-xs font-medium text-bark-900 text-center disabled:opacity-50"
+        className="w-full py-2.5 rounded-xl border border-warm-gray-200 bg-white text-sm font-medium text-bark-900 text-center disabled:opacity-50"
       >
         {exporting ? "Exporting…" : "Export my history (CSV)"}
       </button>
 
       {/* Track B/C stub */}
       <div className="mt-6 mb-4 rounded-xl border border-dashed border-warm-gray-300 bg-warm-gray-50 p-4 text-center">
-        <div className="text-xs text-warm-gray-400 font-medium">
+        <div className="text-sm text-warm-gray-400 font-medium">
           Portfolio · Standing · Credits
         </div>
-        <div className="text-[10px] text-warm-gray-300 mt-1">Coming in a future update</div>
+        <div className="text-xs text-warm-gray-300 mt-1">Coming in a future update</div>
       </div>
     </>
   );
@@ -593,8 +618,8 @@ function GroupTab({
 
   return (
     <>
-      {/* Group info card */}
-      <div className="bg-white rounded-xl border border-warm-gray-200 p-3.5 mb-3">
+      {/* Group info card — taps through to group page */}
+      <Link href={`/groups/${group.groupId}`} className="block bg-white rounded-xl border border-warm-gray-200 p-3.5 mb-3 hover:border-warm-gray-300 transition-colors">
         <div className="flex items-center gap-2 mb-1">
           <span
             className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
@@ -602,18 +627,21 @@ function GroupTab({
           >
             {group.name.charAt(0).toUpperCase()}
           </span>
-          <span className="text-sm font-semibold text-bark-900">{group.name}</span>
+          <span className="text-base font-semibold text-bark-900">{group.name}</span>
+          <svg className="ml-auto w-4 h-4 text-warm-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </div>
-        <div className="text-xs text-warm-gray-500">
+        <div className="text-sm text-warm-gray-500">
           Week {group.stats.weeksSinceJoin} · {group.memberCount} members
         </div>
-        <div className="text-xs text-bark-700 font-medium mt-1">
+        <div className="text-sm text-bark-700 font-medium mt-1">
           {formatRole(group.role)}
         </div>
-      </div>
+      </Link>
 
       {/* Scoped stats */}
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+      <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
         {group.role === "coordinator" ? "Your Impact" : "You Showed Up"}
       </div>
       <div className="grid grid-cols-2 gap-2 mb-4">
@@ -639,7 +667,7 @@ function GroupTab({
       {/* Extol Cards gallery */}
       {group.cards.length > 0 && (
         <>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
             Your {group.name} Cards
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -652,7 +680,7 @@ function GroupTab({
       )}
 
       {/* Scoped feed */}
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+      <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
         Recent — {group.name}
       </div>
       {visibleFeed.length > 0 ? (
@@ -663,7 +691,7 @@ function GroupTab({
           {!showAllFeed && group.feed.length > 4 && (
             <button
               onClick={() => setShowAllFeed(true)}
-              className="text-xs text-violet-600 font-medium py-1.5"
+              className="text-sm text-violet-600 font-medium py-1.5"
             >
               View all →
             </button>
@@ -677,13 +705,13 @@ function GroupTab({
       {group.milestones.length > 0 && (
         <>
           <div className="h-px bg-warm-gray-200 my-4" />
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray-500 mb-2">
             Milestones
           </div>
           {group.milestones.map((ms, i) => {
             const label = milestoneLabel(ms.type, group.name);
             return (
-              <div key={i} className="flex items-center gap-2.5 py-1.5 text-xs text-warm-gray-500">
+              <div key={i} className="flex items-center gap-2.5 py-1.5 text-sm text-warm-gray-500">
                 <span className="text-base">{label.icon}</span>
                 <span>{label.text}</span>
               </div>
@@ -698,17 +726,17 @@ function GroupTab({
       <button
         onClick={onExport}
         disabled={exporting}
-        className="w-full py-2.5 rounded-xl border border-warm-gray-200 bg-white text-xs font-medium text-bark-900 text-center disabled:opacity-50"
+        className="w-full py-2.5 rounded-xl border border-warm-gray-200 bg-white text-sm font-medium text-bark-900 text-center disabled:opacity-50"
       >
         {exporting ? "Exporting…" : "Export my history (CSV)"}
       </button>
 
       {/* Track B/C stub */}
       <div className="mt-6 mb-4 rounded-xl border border-dashed border-warm-gray-300 bg-warm-gray-50 p-4 text-center">
-        <div className="text-xs text-warm-gray-400 font-medium">
+        <div className="text-sm text-warm-gray-400 font-medium">
           Standing · Credits · α Commitment
         </div>
-        <div className="text-[10px] text-warm-gray-300 mt-1">Coming in a future update</div>
+        <div className="text-xs text-warm-gray-300 mt-1">Coming in a future update</div>
       </div>
     </>
   );
