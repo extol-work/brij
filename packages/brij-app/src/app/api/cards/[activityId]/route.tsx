@@ -201,18 +201,33 @@ export async function GET(
       ? activity.title.slice(0, 38) + "…"
       : activity.title;
 
+  // Coordinator first name for summary attribution
+  let coordinatorFirstName: string | null = null;
+  if (activity.coordinatorId) {
+    const coordinator = await db.query.users.findFirst({
+      where: eq(users.id, activity.coordinatorId),
+    });
+    if (coordinator?.name) {
+      coordinatorFirstName = coordinator.name.split(" ")[0];
+    }
+  }
+
   // Summary line (from coordinator closure) — clean word-break, no ellipsis
+  // Attribution: "Summary text — Ken"
   const MAX_SUMMARY = 120;
   let summaryText: string | null = null;
   if (activity.summary) {
-    if (activity.summary.length <= MAX_SUMMARY) {
-      summaryText = activity.summary;
+    const attribution = coordinatorFirstName ? ` — ${coordinatorFirstName}` : "";
+    const maxBody = MAX_SUMMARY - attribution.length;
+    let body: string;
+    if (activity.summary.length <= maxBody) {
+      body = activity.summary;
     } else {
-      // Cut at last space before limit
-      const trimmed = activity.summary.slice(0, MAX_SUMMARY);
+      const trimmed = activity.summary.slice(0, maxBody);
       const lastSpace = trimmed.lastIndexOf(" ");
-      summaryText = lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
+      body = lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
     }
+    summaryText = body + attribution;
   }
 
   // Generate QR code as data URL
