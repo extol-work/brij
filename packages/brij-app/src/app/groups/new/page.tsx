@@ -23,7 +23,7 @@ const TRACKS = [
   {
     id: "governance_only" as Track,
     name: "Transparent governance",
-    desc: "Track participation, manage budgets, and make decisions together. No tokens or credits.",
+    desc: "Track participation, manage budgets, and make decisions together. Influence grows with contribution. No credits.",
     hint: "Best for nonprofits, clubs, and community orgs",
   },
   {
