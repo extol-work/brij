@@ -48,6 +48,7 @@ interface GroupActivity {
   shareCode: string;
   attendeeCount: number;
   myStatus: string | null;
+  cardUrl: string | null;
 }
 
 interface ExpenseEntry {
@@ -865,22 +866,35 @@ function EventsTab({ activities, groupId, isCoordinator, onActivityUpdated }: { 
           <p className="text-xs font-semibold text-warm-gray-500 uppercase tracking-wide mb-2">Past</p>
           <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
             {visiblePast.map((a) => (
-              <a key={a.id} href={`/activity/${a.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-cream/50 transition-colors">
-                <div>
-                  <p className="text-sm font-medium text-bark-900">{a.title}</p>
-                  <p className="text-xs text-warm-gray-400">
-                    {a.startsAt ? new Date(a.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}
-                    {a.location && ` · ${a.location}`}
-                    {a.attendeeCount > 0 && ` · ${a.attendeeCount} attended`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {a.myStatus === "checked_in" && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600">You attended</span>
+              <div key={a.id} className="flex items-center px-4 py-3 gap-3">
+                <div className="text-xs text-warm-gray-400 font-medium shrink-0 w-12 text-center">
+                  {a.startsAt ? (
+                    <>
+                      <div>{new Date(a.startsAt).toLocaleDateString(undefined, { month: "short" })}</div>
+                      <div className="text-sm text-bark-700 font-semibold">{new Date(a.startsAt).getDate()}</div>
+                    </>
+                  ) : (
+                    <div>—</div>
                   )}
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-warm-gray-100 text-warm-gray-500">Done</span>
                 </div>
-              </a>
+                <a href={`/activity/${a.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                  <p className="text-sm font-medium text-bark-900 truncate">{a.title}</p>
+                  <p className="text-xs text-warm-gray-400">
+                    {a.location && `${a.location} · `}
+                    {a.attendeeCount > 0 ? `${a.attendeeCount} attended` : "No attendees"}
+                    {a.myStatus === "checked_in" && " · ✓ You"}
+                  </p>
+                </a>
+                {a.cardUrl ? (
+                  <a href={`/card/${a.id}`} className="shrink-0 w-10 h-14 rounded overflow-hidden hover:opacity-80 transition-opacity">
+                    <img src={a.cardUrl} alt="Extol Card" className="w-full h-full object-cover" />
+                  </a>
+                ) : (
+                  <div className="shrink-0 w-10 h-14 rounded bg-warm-gray-100 flex items-center justify-center">
+                    <span className="text-warm-gray-300 text-xs">—</span>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
           {past.length > pastLimit && (

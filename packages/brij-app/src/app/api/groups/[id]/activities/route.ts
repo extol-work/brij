@@ -36,6 +36,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       shareCode: activities.shareCode,
       isPrivate: activities.isPrivate,
       coordinatorId: activities.coordinatorId,
+      cardUrl: activities.cardUrl,
       attendeeCount: sql<number>`(SELECT count(*) FROM attendances WHERE activity_id = ${activities.id} AND status = 'checked_in')::int`,
     })
     .from(activities)
