@@ -867,19 +867,19 @@ function EventsTab({ activities, groupId, isCoordinator, onActivityUpdated }: { 
           <div className="border border-warm-gray-200 rounded-lg divide-y divide-warm-gray-200">
             {visiblePast.map((a) => (
               <div key={a.id} className="flex items-center px-4 py-3 gap-3">
-                <div className="text-xs text-warm-gray-400 font-medium shrink-0 w-12 text-center">
+                <div className="text-sm text-warm-gray-400 font-medium shrink-0 w-12 text-center">
                   {a.startsAt ? (
                     <>
                       <div>{new Date(a.startsAt).toLocaleDateString(undefined, { month: "short" })}</div>
-                      <div className="text-sm text-bark-700 font-semibold">{new Date(a.startsAt).getDate()}</div>
+                      <div className="text-base text-bark-700 font-semibold">{new Date(a.startsAt).getDate()}</div>
                     </>
                   ) : (
                     <div>—</div>
                   )}
                 </div>
                 <a href={`/activity/${a.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
-                  <p className="text-sm font-medium text-bark-900 truncate">{a.title}</p>
-                  <p className="text-xs text-warm-gray-400">
+                  <p className="text-base font-medium text-bark-900 truncate">{a.title}</p>
+                  <p className="text-sm text-warm-gray-400">
                     {a.location && `${a.location} · `}
                     {a.attendeeCount > 0 ? `${a.attendeeCount} attended` : "No attendees"}
                     {a.myStatus === "checked_in" && " · ✓ You"}

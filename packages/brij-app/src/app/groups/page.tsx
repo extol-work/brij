@@ -33,11 +33,7 @@ export default function MyGroups() {
   return (
     <div className="min-h-screen pb-16">
       <div className="flex items-center gap-2 px-4 py-4 border-b border-warm-gray-200">
-        <Link href="/" className="text-base text-violet-600 cursor-pointer">
-          &lsaquo; Back
-        </Link>
         <h1 className="text-lg font-bold flex-1 text-center text-bark-900">My Groups</h1>
-        <div className="w-10" />
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4">

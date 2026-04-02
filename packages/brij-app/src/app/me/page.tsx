@@ -451,7 +451,7 @@ export default function MePage() {
             {/* Summary tab */}
             <button
               onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
-              className={`shrink-0 min-w-[72px] flex-1 py-3 px-2 text-center text-sm font-medium border-r border-warm-gray-200 transition-colors ${
+              className={`shrink-0 min-w-[90px] flex-1 py-3 px-2 text-center text-sm font-medium border-r border-warm-gray-200 transition-colors ${
                 activeTab === "summary"
                   ? "bg-bark-900 text-cream font-semibold"
                   : "text-warm-gray-400 hover:bg-warm-gray-50"

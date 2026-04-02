@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
+import { generateAndStoreCard } from "@/lib/generate-card";
 
 export async function POST(
   req: NextRequest,
@@ -60,6 +61,12 @@ export async function POST(
     .where(eq(activities.id, id))
     .returning();
 
+  // Regenerate the Extol Card so it uses the new photo
+  if (updated.cardUrl) {
+    const baseUrl = req.nextUrl.origin;
+    generateAndStoreCard(id, baseUrl).catch(() => {});
+  }
+
   return NextResponse.json({ photoUrl: updated.photoUrl });
 }
 
@@ -92,6 +99,12 @@ export async function DELETE(
     .update(activities)
     .set({ photoUrl: null, updatedAt: new Date() })
     .where(eq(activities.id, id));
+
+  // Regenerate card with default background
+  if (activity.cardUrl) {
+    const baseUrl = _req.nextUrl.origin;
+    generateAndStoreCard(id, baseUrl).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }
