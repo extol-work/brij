@@ -439,7 +439,7 @@ export default function MePage() {
               onChange={handleAvatarUpload}
             />
           </div>
-          <div className="text-[22px] font-bold tracking-tight mt-2">{profile.name}</div>
+          <div className="text-lg font-bold tracking-tight mt-2">{profile.name}</div>
           <div className="text-sm text-warm-gray-400">
             On brij since {formatSince(profile.since)}
           </div>
@@ -639,23 +639,23 @@ function GroupTab({
   return (
     <>
       {/* Group info card — taps through to group page */}
-      <Link href={`/groups/${group.groupId}`} className="block bg-white rounded-xl border border-warm-gray-200 p-4 mb-4 hover:border-warm-gray-300 transition-colors">
-        <div className="flex items-center gap-2 mb-1">
+      <Link href={`/groups/${group.groupId}`} className="block bg-white rounded-xl border border-warm-gray-200 p-3 mb-4 hover:border-warm-gray-300 transition-colors">
+        <div className="flex items-center gap-2 mb-0.5">
           <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold"
+            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
             style={{ backgroundColor: group.color }}
           >
             {group.name.charAt(0).toUpperCase()}
           </span>
-          <span className="text-lg font-semibold text-bark-900">{group.name}</span>
+          <span className="text-base font-semibold text-bark-900">{group.name}</span>
           <svg className="ml-auto w-4 h-4 text-warm-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </div>
-        <div className="text-base text-warm-gray-500">
+        <div className="text-sm text-warm-gray-500">
           Week {group.stats.weeksSinceJoin} · {group.memberCount} members
         </div>
-        <div className="text-base text-bark-700 font-medium mt-1">
+        <div className="text-sm text-bark-700 font-medium mt-0.5">
           {formatRole(group.role)}
         </div>
       </Link>

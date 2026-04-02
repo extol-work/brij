@@ -31,7 +31,7 @@ export function BottomNav() {
   }, []);
 
   const items = [
-    { href: "/", label: "Now", icon: "⚡" },
+    { href: "/", label: "Home", icon: "⚡" },
     { href: "/groups", label: "Groups", icon: "👥" },
     { href: "/me", label: "Me", icon: "◉" },
   ];
