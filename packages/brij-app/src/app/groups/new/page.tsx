@@ -241,7 +241,7 @@ export default function NewGroupOnboarding() {
                 <p className="text-sm text-[#999] mt-4">
                   Some communities also use credit economies.{" "}
                   <a
-                    href="https://docs.extol.work/tracks"
+                    href="https://docs.extol.work/credits"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-[#666]"
