@@ -439,7 +439,7 @@ export default function MePage() {
               onChange={handleAvatarUpload}
             />
           </div>
-          <div className="text-lg font-bold tracking-tight mt-2">{profile.name}</div>
+          <div className="text-[22px] font-bold tracking-tight mt-2">{profile.name}</div>
           <div className="text-sm text-warm-gray-400">
             On brij since {formatSince(profile.since)}
           </div>
