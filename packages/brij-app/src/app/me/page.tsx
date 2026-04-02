@@ -135,14 +135,14 @@ function StatCell({
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 text-center ${
+      className={`rounded-xl border p-3 text-center ${
         highlight
           ? "bg-amber-50 border-amber-300"
           : "bg-white border-warm-gray-200"
       }`}
     >
       <div
-        className={`text-2xl font-bold leading-tight ${
+        className={`text-xl font-bold leading-tight ${
           highlight ? "text-amber-800" : "text-bark-900"
         }`}
       >

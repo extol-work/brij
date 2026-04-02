@@ -7,6 +7,7 @@ import Link from "next/link";
 import QRCode from "react-qr-code";
 import { getLocation } from "@/lib/geolocation";
 import { track } from "@/lib/posthog";
+import { BottomNav } from "@/components/bottom-nav";
 
 interface GroupPreview {
   id: string;
@@ -323,7 +324,6 @@ export default function GroupDetailPage() {
       {/* Header */}
       <div className="border-b border-warm-gray-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link href="/groups" className="text-base text-violet-600">&lsaquo; Back</Link>
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold text-white shrink-0"
             style={{ backgroundColor: group.color }}
@@ -701,9 +701,10 @@ export default function GroupDetailPage() {
           </div>
         )}
 
-        {/* Bottom spacer for scroll breathing room */}
-        <div className="h-16" />
+        {/* Bottom spacer for nav */}
+        <div className="h-24" />
       </div>
+      <BottomNav />
     </div>
   );
 }

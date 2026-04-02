@@ -27,6 +27,7 @@ interface Activity {
   closedAt: string | null;
   createdAt: string;
   photoUrl: string | null;
+  cardUrl: string | null;
   groupId: string | null;
   groupName?: string | null;
 }
@@ -1156,8 +1157,8 @@ export default function ActivityDetail() {
           </div>
         )}
 
-        {/* Extol Card button — shown for closed activities with attendees */}
-        {activity.status === "closed" && checkedIn.length > 0 && (
+        {/* Extol Card button — shown for closed activities with attendees or existing card */}
+        {activity.status === "closed" && (checkedIn.length > 0 || activity.cardUrl) && (
           <div className="mb-6">
             <button
               onClick={() => router.push(`/card/${activity.id}`)}
