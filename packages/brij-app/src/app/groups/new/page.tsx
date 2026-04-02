@@ -161,7 +161,7 @@ export default function NewGroupOnboarding() {
         {/* Step 1: Type */}
         {step === 1 && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
-            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
+            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-xs font-bold px-2.5 py-0.5 rounded-full tracking-wide">
               Step 1 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
@@ -181,7 +181,7 @@ export default function NewGroupOnboarding() {
                 >
                   <div className="text-[28px] mb-2">{t.icon}</div>
                   <div className="text-sm font-semibold">{t.name}</div>
-                  <div className="text-xs text-[#999] mt-0.5">{t.desc}</div>
+                  <div className="text-sm text-[#999] mt-0.5">{t.desc}</div>
                 </button>
               ))}
               {GROUP_TYPES.filter((t) => "wide" in t).map((t) => (
@@ -203,7 +203,7 @@ export default function NewGroupOnboarding() {
               ))}
             </div>
 
-            <p className="text-[13px] text-[#999] mt-4">
+            <p className="text-sm text-[#999] mt-4">
               This helps us set sensible defaults. You can change everything later.
             </p>
 
@@ -222,7 +222,7 @@ export default function NewGroupOnboarding() {
         {/* Step 2: Track */}
         {step === 2 && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
-            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
+            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-xs font-bold px-2.5 py-0.5 rounded-full tracking-wide">
               Step 2 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
@@ -233,12 +233,12 @@ export default function NewGroupOnboarding() {
               <>
                 <div className="p-5 border-2 border-violet-600 bg-violet-50 rounded-xl text-left">
                   <div className="text-sm font-semibold mb-1">Transparent governance</div>
-                  <div className="text-[13px] text-[#666] leading-snug">
+                  <div className="text-sm text-[#666] leading-snug">
                     Your community will use transparent governance — decisions, contributions, and trust built through visibility.
                   </div>
                 </div>
 
-                <p className="text-[12px] text-[#999] mt-4">
+                <p className="text-sm text-[#999] mt-4">
                   Some communities also use credit economies.{" "}
                   <a
                     href="https://docs.extol.work/tracks"
@@ -264,13 +264,13 @@ export default function NewGroupOnboarding() {
                       }`}
                     >
                       <div className="text-sm font-semibold mb-1">{t.name}</div>
-                      <div className="text-[13px] text-[#666] leading-snug">{t.desc}</div>
-                      <div className="text-xs text-[#999] mt-2">{t.hint}</div>
+                      <div className="text-sm text-[#666] leading-snug">{t.desc}</div>
+                      <div className="text-sm text-[#999] mt-2">{t.hint}</div>
                     </button>
                   ))}
                 </div>
 
-                <p className="text-[13px] text-[#999] mt-4">
+                <p className="text-sm text-[#999] mt-4">
                   You can change this later in group settings.
                 </p>
               </>
@@ -288,7 +288,7 @@ export default function NewGroupOnboarding() {
         {/* Step 3: Name */}
         {step === 3 && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
-            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
+            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-xs font-bold px-2.5 py-0.5 rounded-full tracking-wide">
               Step 3 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
@@ -296,18 +296,18 @@ export default function NewGroupOnboarding() {
             </h2>
 
             <div className="mb-5">
-              <label className="block text-[13px] font-semibold text-[#666] mb-1.5">Group name</label>
+              <label className="block text-sm font-semibold text-[#666] mb-1.5">Group name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Riverside Trail Crew"
-                className="w-full px-3.5 py-3 border border-[#e8e0d4] rounded-xl text-[15px] bg-[#FDF8F0] focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600"
+                className="w-full px-3.5 py-3 border border-[#e8e0d4] rounded-xl text-base bg-[#FDF8F0] focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600"
               />
             </div>
 
             <div className="mb-5">
-              <label className="block text-[13px] font-semibold text-[#666] mb-1.5">
+              <label className="block text-sm font-semibold text-[#666] mb-1.5">
                 Description <span className="font-normal text-[#999]">(optional)</span>
               </label>
               <textarea
@@ -315,11 +315,11 @@ export default function NewGroupOnboarding() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What does your group do?"
                 rows={2}
-                className="w-full px-3.5 py-3 border border-[#e8e0d4] rounded-xl text-sm bg-[#FDF8F0] resize-none focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 font-[inherit]"
+                className="w-full px-3.5 py-3 border border-[#e8e0d4] rounded-xl text-base bg-[#FDF8F0] resize-none focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 font-[inherit]"
               />
             </div>
 
-            <p className="text-[13px] text-[#999]">
+            <p className="text-sm text-[#999]">
               This is what members see when they join. Keep it simple.
             </p>
 
@@ -336,7 +336,7 @@ export default function NewGroupOnboarding() {
         {/* Step 4: Invite */}
         {step === 4 && !createdGroup && (
           <div className="bg-white border border-[#e8e0d4] rounded-2xl p-7 relative">
-            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide">
+            <span className="absolute -top-2.5 left-6 bg-[#1a1a1a] text-white text-xs font-bold px-2.5 py-0.5 rounded-full tracking-wide">
               Step 4 of 4
             </span>
             <h2 className="text-[22px] font-bold tracking-tight mb-5 leading-tight">
@@ -365,7 +365,7 @@ export default function NewGroupOnboarding() {
             </div>
 
             <div className="mb-5">
-              <label className="block text-[13px] font-semibold text-[#666] mb-1.5">
+              <label className="block text-sm font-semibold text-[#666] mb-1.5">
                 Add your founding members
               </label>
               <div className={`px-3.5 py-3 border rounded-xl bg-[#FDF8F0] min-h-[48px] ${emailError ? "border-red-400" : "border-[#e8e0d4]"}`}>
@@ -374,12 +374,12 @@ export default function NewGroupOnboarding() {
                     {inviteEmails.map(({ email, status, name }) => (
                       <span
                         key={email}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 bg-white border rounded-full text-[13px] ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 bg-white border rounded-full text-sm ${
                           status === "found" ? "border-green-300" : status === "not_found" ? "border-amber-300" : "border-[#e8e0d4]"
                         }`}
                       >
                         <span
-                          className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-semibold text-white ${
+                          className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-semibold text-white ${
                             status === "checking" ? "animate-pulse" : ""
                           }`}
                           style={{ backgroundColor: status === "not_found" ? "#d97706" : selectedType.color }}
@@ -388,11 +388,11 @@ export default function NewGroupOnboarding() {
                         </span>
                         <span>{name || email.split("@")[0]}</span>
                         {status === "not_found" && (
-                          <span className="text-[10px] text-amber-600">not on brij</span>
+                          <span className="text-[11px] text-amber-600">not on brij</span>
                         )}
                         <button
                           onClick={() => setInviteEmails((prev) => prev.filter((e) => e.email !== email))}
-                          className="text-[11px] text-[#999] ml-0.5"
+                          className="text-xs text-[#999] ml-0.5"
                         >
                           ×
                         </button>
@@ -411,18 +411,18 @@ export default function NewGroupOnboarding() {
                     }
                   }}
                   placeholder="Enter email and press Enter..."
-                  className="w-full text-sm bg-transparent outline-none placeholder-[#999]"
+                  className="w-full text-base bg-transparent outline-none placeholder-[#999]"
                 />
               </div>
-              {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+              {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
               {inviteEmails.some((e) => e.status === "not_found") && (
-                <p className="text-xs text-amber-600 mt-1">
+                <p className="text-sm text-amber-600 mt-1">
                   People not on brij yet will need to sign up before they can join. Share the invite link instead.
                 </p>
               )}
             </div>
 
-            <p className="text-[13px] text-[#999]">
+            <p className="text-sm text-[#999]">
               You can always add more people later. Share the link or add them by email.
             </p>
 
@@ -470,15 +470,15 @@ export default function NewGroupOnboarding() {
             )}
             {inviteErrors.length > 0 && (
               <div className="text-left mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-xs font-semibold text-amber-700 mb-1">Some invites couldn&apos;t be sent:</p>
+                <p className="text-sm font-semibold text-amber-700 mb-1">Some invites couldn&apos;t be sent:</p>
                 {inviteErrors.map((err, i) => (
-                  <p key={i} className="text-xs text-amber-600">{err}</p>
+                  <p key={i} className="text-sm text-amber-600">{err}</p>
                 ))}
               </div>
             )}
 
             <div className="flex items-center gap-2 px-3.5 py-3 bg-[#FDF8F0] border border-[#E8D5BC] rounded-xl mb-6">
-              <span className="flex-1 text-[13px] text-[#666] truncate text-left font-mono">
+              <span className="flex-1 text-base text-[#666] truncate text-left font-mono">
                 {typeof window !== "undefined" ? window.location.origin : ""}/groups/join/{createdGroup.joinCode}
               </span>
               <button
@@ -487,7 +487,7 @@ export default function NewGroupOnboarding() {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
-                className="px-3 py-1.5 bg-violet-600 text-white rounded-md text-xs font-semibold shrink-0"
+                className="px-3 py-1.5 bg-violet-600 text-white rounded-md text-sm font-semibold shrink-0"
               >
                 {copied ? "Copied!" : "Copy"}
               </button>
