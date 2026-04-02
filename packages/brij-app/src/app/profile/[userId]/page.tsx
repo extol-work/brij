@@ -171,7 +171,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <div className="max-w-md mx-auto px-5 py-8">
+      <div className="max-w-2xl mx-auto px-5 py-8">
         {/* Profile Header */}
         <div className="text-center pb-5 border-b border-warm-gray-200 relative">
           <button

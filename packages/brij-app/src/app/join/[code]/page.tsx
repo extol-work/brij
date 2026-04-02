@@ -282,7 +282,7 @@ function JoinActivityInner() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-warm-gray-200">
-        <div className="max-w-md mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
           <BrijLogo />
           {live && (
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full uppercase tracking-wide">
@@ -292,7 +292,7 @@ function JoinActivityInner() {
           )}
         </div>
       </header>
-      <div className="max-w-md w-full mx-auto px-6 py-8">
+      <div className="max-w-2xl w-full mx-auto px-6 py-8">
         {authenticated && (
           <Link
             href="/"

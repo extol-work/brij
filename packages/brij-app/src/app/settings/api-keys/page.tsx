@@ -109,14 +109,14 @@ export default function ApiKeysPage() {
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
       <div className="border-b border-warm-gray-200">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-2">
           <Link href="/settings" className="text-base text-violet-600">&lsaquo; Settings</Link>
           <h1 className="text-lg font-bold flex-1 text-center text-bark-900">API Keys</h1>
           <div className="w-16" />
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
         {loading ? (
           <p className="text-sm text-warm-gray-400 text-center py-8">Loading...</p>
         ) : groups.length === 0 ? (

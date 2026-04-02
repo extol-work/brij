@@ -322,7 +322,7 @@ export default function GroupDetailPage() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-warm-gray-200">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link href="/groups" className="text-base text-violet-600">&lsaquo; Back</Link>
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold text-white shrink-0"
@@ -364,7 +364,7 @@ export default function GroupDetailPage() {
       )}
 
       {/* Stats bar */}
-      <div className="max-w-lg mx-auto px-4 py-3">
+      <div className="max-w-2xl mx-auto px-4 py-3">
         <div className="flex gap-px bg-warm-gray-200 rounded-xl overflow-hidden">
           <div className="flex-1 bg-white py-3 text-center">
             <p className="text-xl font-bold text-bark-900">{group.members.filter((m) => m.status === "active").length}</p>
@@ -382,7 +382,7 @@ export default function GroupDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="max-w-lg mx-auto px-4">
+      <div className="max-w-2xl mx-auto px-4">
         <div className="flex gap-1 border-b border-warm-gray-200 mb-4">
           {(["events", "journal", "expenses", "members", ...(isCoordinator ? ["settings" as const] : [])] as const).map((t) => (
             <button

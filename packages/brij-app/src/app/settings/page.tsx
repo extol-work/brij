@@ -50,14 +50,14 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
       <div className="border-b border-warm-gray-200">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-2">
           <Link href="/" className="text-base text-violet-600">&lsaquo; Back</Link>
           <h1 className="text-lg font-bold flex-1 text-center text-bark-900">Settings</h1>
           <div className="w-10" />
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
         {/* Profile */}
         <div>
           <h2 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Profile</h2>

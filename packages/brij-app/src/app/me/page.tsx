@@ -359,7 +359,7 @@ export default function MePage() {
 
   return (
     <div className="min-h-screen bg-cream pb-20">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-2xl mx-auto">
         {/* Top bar */}
         <div className="flex items-center justify-end gap-2 pt-4 px-5">
           <Link

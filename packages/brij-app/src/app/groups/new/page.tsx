@@ -145,7 +145,7 @@ export default function NewGroupOnboarding() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
-      <div className="max-w-[480px] mx-auto px-4 py-4 pb-20">
+      <div className="max-w-2xl mx-auto px-4 py-4 pb-20">
         {/* Progress bar */}
         <div className="flex gap-1.5 mb-6">
           {[1, 2, 3, 4].map((s) => (
@@ -180,7 +180,7 @@ export default function NewGroupOnboarding() {
                   }`}
                 >
                   <div className="text-[28px] mb-2">{t.icon}</div>
-                  <div className="text-sm font-semibold">{t.name}</div>
+                  <div className="text-base font-semibold">{t.name}</div>
                   <div className="text-sm text-[#999] mt-0.5">{t.desc}</div>
                 </button>
               ))}
@@ -196,8 +196,8 @@ export default function NewGroupOnboarding() {
                 >
                   <span className="text-2xl">{t.icon}</span>
                   <div>
-                    <div className="text-sm font-semibold">{t.name}</div>
-                    <div className="text-xs text-[#999]">{t.desc}</div>
+                    <div className="text-base font-semibold">{t.name}</div>
+                    <div className="text-sm text-[#999]">{t.desc}</div>
                   </div>
                 </button>
               ))}
