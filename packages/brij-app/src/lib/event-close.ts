@@ -6,7 +6,7 @@
  */
 
 import { db } from "@/db";
-import { attendances, users, platformIdentities } from "@/db/schema";
+import { activities, attendances, users, platformIdentities } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { pushEventClosed } from "@/lib/cortex";
 import { getGroupTier } from "@/lib/community-plan";
@@ -88,6 +88,9 @@ export async function pushActivityClosed(
   // Look up community tier for attestation routing
   const tier = groupId ? await getGroupTier(groupId) : "free";
   const cortexTier = tier === "free" ? "free" : "paid";
+
+  // Mark activity as pending attestation
+  await db.update(activities).set({ attestationStatus: "pending" }).where(eq(activities.id, activityId));
 
   // Push to Cortex — fire and forget
   pushEventClosed(

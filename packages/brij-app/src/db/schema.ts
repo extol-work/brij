@@ -234,6 +234,7 @@ export const activities = pgTable("activities", {
   summary: text("summary"),
   sentiment: text("sentiment"),
   closedAt: timestamp("closed_at", { withTimezone: true }),
+  attestationStatus: text("attestation_status").default("none"), // 'none' | 'pending' | 'confirmed' | 'failed'
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

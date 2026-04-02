@@ -135,13 +135,11 @@ export async function GET(
     }
   }
 
-  // Resolve group name + track
+  // Resolve group name
   let groupName: string | null = null;
-  let groupTrack: string = "governance_only";
   if (activity.groupId) {
     const group = await db.query.groups.findFirst({ where: eq(groups.id, activity.groupId) });
     groupName = group?.name || null;
-    groupTrack = group?.track || "governance_only";
   }
 
   // Select background — uploaded photo takes priority
@@ -484,7 +482,7 @@ export async function GET(
                 width={40}
                 height={40}
               />
-              {groupTrack === "governance_only" ? "Verified record" : "Verified on Solana"}
+              Verified on Solana
             </div>
             <div
               style={{
