@@ -3,6 +3,14 @@
  *
  * Called on manual close, auto-close cron, and bot close.
  * Builds derivation inputs for each attendee and fires the push.
+ *
+ * IMPORTANT: Event close is a one-way operation. Once closed, an activity
+ * must NEVER be reopened. Reopening would allow duplicate attestations
+ * (close → attest → reopen → close → attest again) and injection of
+ * fraudulent check-ins into already-attested merkle roots. There is no
+ * "reopen" feature and one must not be built. If a coordinator made a
+ * mistake, the correct action is to create a new activity — same principle
+ * as financial ledgers: post corrections, don't edit entries.
  */
 
 import { db } from "@/db";
@@ -101,6 +109,18 @@ export async function pushActivityClosed(
   }
 
   if (attendeeList.length === 0) return;
+
+  // Guard: prevent double attestation. If this activity already has a pending
+  // or confirmed attestation, do not push to Cortex again. This protects against
+  // race conditions, double-close bugs, or any future code path that might
+  // invoke close on an already-attested activity.
+  const activity = await db.query.activities.findFirst({
+    where: eq(activities.id, activityId),
+    columns: { attestationStatus: true },
+  });
+  if (activity?.attestationStatus && activity.attestationStatus !== "none") {
+    return;
+  }
 
   // Look up community tier for attestation routing
   const tier = groupId ? await getGroupTier(groupId) : "free";
