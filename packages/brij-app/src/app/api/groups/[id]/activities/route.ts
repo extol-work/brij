@@ -37,11 +37,28 @@ export async function GET(_req: NextRequest, { params }: Params) {
       isPrivate: activities.isPrivate,
       coordinatorId: activities.coordinatorId,
       cardUrl: activities.cardUrl,
-      attendeeCount: sql<number>`(SELECT count(*) FROM attendances WHERE activity_id = ${activities.id} AND status = 'checked_in')::int`,
     })
     .from(activities)
     .where(eq(activities.groupId, groupId))
     .orderBy(desc(activities.startsAt));
+
+  // Get attendance counts per activity (separate query to avoid correlated subquery issues)
+  const activityIds = rows.map((r) => r.id);
+  let attendanceCounts = new Map<string, number>();
+  if (activityIds.length > 0) {
+    const counts = await db
+      .select({
+        activityId: attendances.activityId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(attendances)
+      .where(and(
+        sql`${attendances.activityId} IN (${sql.join(activityIds.map(id => sql`${id}`), sql`, `)})`,
+        eq(attendances.status, "checked_in")
+      ))
+      .groupBy(attendances.activityId);
+    attendanceCounts = new Map(counts.map((c) => [c.activityId, c.count]));
+  }
 
   // Get user's attendance for each activity
   const userAttendances = await db
@@ -64,6 +81,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     })
     .map((r) => ({
       ...r,
+      attendeeCount: attendanceCounts.get(r.id) ?? 0,
       myStatus: attendanceMap.get(r.id) || null,
     }));
 
