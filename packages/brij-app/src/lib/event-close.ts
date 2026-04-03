@@ -36,10 +36,11 @@ export async function pushActivityClosed(
     ),
   });
 
-  if (checkins.length === 0) return;
-
   // Build attendee list with derivation inputs
   const attendeeList: { derivationInput: string; displayName: string; joinedAt: string | null; role: "participant" | "coordinator" }[] = [];
+
+  // Track whether the creator appears in check-ins
+  let creatorIncluded = false;
 
   for (const checkin of checkins) {
     let derivationInput: string;
@@ -53,6 +54,7 @@ export async function pushActivityClosed(
         where: eq(users.id, checkin.userId),
       });
       displayName = user?.name || user?.email || "Member";
+      if (checkin.userId === coordinatorId) creatorIncluded = true;
     } else if (checkin.platformIdentityId) {
       // Platform identity (bot-originated) — derive from platform prefix
       const pi = await db.query.platformIdentities.findFirst({
@@ -81,6 +83,21 @@ export async function pushActivityClosed(
       joinedAt: checkin.checkedInAt?.toISOString() || null,
       role,
     });
+  }
+
+  // Always inject creator as coordinator if they weren't already in check-ins
+  if (coordinatorId && !creatorIncluded) {
+    const creator = await db.query.users.findFirst({
+      where: eq(users.id, coordinatorId),
+    });
+    if (creator) {
+      attendeeList.push({
+        derivationInput: `${communityId}:${coordinatorId}:${epoch}`,
+        displayName: creator.name || creator.email || "Coordinator",
+        joinedAt: closedAt.toISOString(),
+        role: "coordinator",
+      });
+    }
   }
 
   if (attendeeList.length === 0) return;
