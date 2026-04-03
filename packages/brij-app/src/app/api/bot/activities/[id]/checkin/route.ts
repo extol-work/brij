@@ -6,8 +6,6 @@ import { eq, and } from "drizzle-orm";
 
 /** Max unclaimed attendances per platform identity before capping */
 const MAX_UNCLAIMED_ATTENDANCES = 50;
-/** Absolute ceiling on batch size regardless of group member count */
-const HARD_BATCH_CEILING = 200;
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -27,11 +25,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
-  // --- Sybil Fix #1: Batch array cap ---
-  const maxBatch = Math.min(auth.group.memberCount || HARD_BATCH_CEILING, HARD_BATCH_CEILING);
-  if (attendees.length > maxBatch) {
+  // --- Sybil Fix #1: Batch array cap (tier-aware) ---
+  if (attendees.length > auth.batchCap) {
     return NextResponse.json(
-      { error: `Batch size ${attendees.length} exceeds maximum of ${maxBatch} for this group` },
+      { error: `Batch size ${attendees.length} exceeds maximum of ${auth.batchCap} for this group (${auth.tier} tier)` },
       { status: 400 }
     );
   }

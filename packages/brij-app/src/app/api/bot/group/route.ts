@@ -21,5 +21,9 @@ export async function GET(req: NextRequest) {
     cover_image_url: auth.group.coverImageUrl,
     platform: auth.group.platform,
     join_url: `https://brij.extol.work/groups/join/${auth.groupId}`,
+    tier: auth.tier,
+    batch_cap: auth.batchCap,
+    max_concurrent_activities: auth.limits.concurrentActivities === -1 ? "unlimited" : auth.limits.concurrentActivities,
+    max_active_proposals: auth.limits.activeProposals === -1 ? "unlimited" : auth.limits.activeProposals,
   });
 }

@@ -23,6 +23,8 @@ export function makeBotContext(overrides?: Partial<BotContext>): BotContext {
   return {
     keyId: fakeUUID(),
     groupId: fakeUUID(),
+    tier: "free",
+    limits: { read: 30, write: 10, batchCap: 25, concurrentActivities: 3, activeProposals: 1 },
     group: {
       id: overrides?.groupId || fakeUUID(),
       name: "Test Group",
@@ -31,6 +33,7 @@ export function makeBotContext(overrides?: Partial<BotContext>): BotContext {
       platform: "discord",
       platformGuildId: "123456",
     },
+    batchCap: 10,
     createdById: fakeUUID(),
     ...overrides,
   };

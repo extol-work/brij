@@ -11,9 +11,21 @@ import { botApiKeys, groups, groupMemberships } from "@/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+/** Tier limits — derived from BOT_API_SPEC.md tier table */
+const TIER_LIMITS = {
+  free:       { read: 30,  write: 10,  batchCap: 25,  concurrentActivities: 3,   activeProposals: 1 },
+  starter:    { read: 60,  write: 30,  batchCap: 100, concurrentActivities: 10,  activeProposals: 5 },
+  pro:        { read: 120, write: 60,  batchCap: 200, concurrentActivities: 25,  activeProposals: 20 },
+  enterprise: { read: 300, write: 120, batchCap: 500, concurrentActivities: -1,  activeProposals: -1 }, // -1 = unlimited
+} as const;
+
+export type BotTier = keyof typeof TIER_LIMITS;
+
 export interface BotContext {
   keyId: string;
   groupId: string;
+  tier: BotTier;
+  limits: (typeof TIER_LIMITS)[BotTier];
   group: {
     id: string;
     name: string;
@@ -22,6 +34,8 @@ export interface BotContext {
     platform: string | null;
     platformGuildId: string | null;
   };
+  /** Effective batch cap: min(memberCount, tier limit) */
+  batchCap: number;
   createdById: string; // The coordinator who created the key
 }
 
@@ -73,7 +87,11 @@ export async function authenticateBot(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Rate limit by key ID
+  // Resolve tier — default to free if somehow missing
+  const keyTier = (key.tier as BotTier) || "free";
+  const limits = TIER_LIMITS[keyTier] || TIER_LIMITS.free;
+
+  // Rate limit by key ID using tier-aware limits
   const rateTier = tier === "write" ? "write" : "auth";
   const limited = await checkRateLimit(req, rateTier, `bot:${key.id}`);
   if (limited) return limited;
@@ -97,17 +115,22 @@ export async function authenticateBot(
       )
     );
 
+  const memberCount = countRow?.count ?? 0;
+
   return {
     keyId: key.id,
     groupId: key.groupId,
+    tier: keyTier,
+    limits,
     group: {
       id: group.id,
       name: group.name,
-      memberCount: countRow?.count ?? 0,
+      memberCount,
       coverImageUrl: group.coverImageUrl ?? null,
       platform: group.platform ?? null,
       platformGuildId: group.platformGuildId ?? null,
     },
+    batchCap: Math.min(memberCount, limits.batchCap),
     createdById: key.createdById,
   };
 }

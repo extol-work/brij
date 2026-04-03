@@ -165,6 +165,7 @@ export const groups = pgTable("groups", {
   taxExemptStatus: taxExemptStatusEnum("tax_exempt_status"),
   stateOfIncorporation: text("state_of_incorporation"),
   fiscalSponsorId: uuid("fiscal_sponsor_id").references(() => organizations.id),
+  keysIssuedCount: integer("keys_issued_count").default(0).notNull(), // anti-gaming: tracks total bot keys ever issued
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
@@ -327,6 +328,13 @@ export const expenseConfirmations = pgTable("expense_confirmations", {
 
 // --- Bot API Keys ---
 
+export const botApiKeyTierEnum = pgEnum("bot_api_key_tier", [
+  "free",
+  "starter",
+  "pro",
+  "enterprise",
+]);
+
 export const botApiKeys = pgTable("bot_api_keys", {
   id: uuid("id").defaultRandom().primaryKey(),
   groupId: uuid("group_id")
@@ -335,6 +343,10 @@ export const botApiKeys = pgTable("bot_api_keys", {
   keyHash: text("key_hash").notNull(), // SHA-256 of the raw key
   keyPrefix: text("key_prefix").notNull(), // First 12 chars for identification
   label: text("label"), // "Discord bot", "Telegram bot"
+  tier: botApiKeyTierEnum("tier").default("free").notNull(),
+  dailyRequestCount: integer("daily_request_count").default(0).notNull(),
+  dailyRequestReset: timestamp("daily_request_reset", { withTimezone: true }),
+  rateLimit: integer("rate_limit").default(30).notNull(), // req/min, derived from tier
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdById: uuid("created_by_id")
@@ -437,6 +449,76 @@ export const userPlans = pgTable("user_plans", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// --- Voting / Governance ---
+
+export const proposalTypeEnum = pgEnum("proposal_type", [
+  "yes_no",
+  "multiple_choice",
+]);
+
+export const proposalModeEnum = pgEnum("proposal_mode", [
+  "quick",
+  "formal",
+]);
+
+export const proposalStatusEnum = pgEnum("proposal_status", [
+  "active",
+  "decided",
+  "tied",
+  "inconclusive",
+]);
+
+export const proposals = pgTable("proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  createdBy: uuid("created_by").references(() => users.id), // NULL for platform-only creators
+  createdByPlatformIdentityId: uuid("created_by_platform_identity_id")
+    .references(() => platformIdentities.id), // agent or bot user who created it
+  title: text("title").notNull(),
+  context: text("context"), // optional markdown description
+  type: proposalTypeEnum("type").notNull(),
+  mode: proposalModeEnum("mode").default("formal").notNull(),
+  status: proposalStatusEnum("status").default("active").notNull(),
+  votingPeriodHours: integer("voting_period_hours").default(120).notNull(), // 5 days for formal, 24h for quick
+  quorum: decimal("quorum", { precision: 3, scale: 2 }), // NULL = no quorum, 0.50 = 50%
+  closesAt: timestamp("closes_at", { withTimezone: true }).notNull(),
+  result: text("result"), // winning option label or summary
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  attestationStatus: text("attestation_status").default("none"), // 'none' | 'pending' | 'confirmed' | 'failed'
+  txSignature: text("tx_signature"), // Solana tx signature for vote attestation
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const proposalOptions = pgTable("proposal_options", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  proposalId: uuid("proposal_id")
+    .references(() => proposals.id, { onDelete: "cascade" })
+    .notNull(),
+  label: text("label").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+});
+
+export const votes = pgTable("votes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  proposalId: uuid("proposal_id")
+    .references(() => proposals.id, { onDelete: "cascade" })
+    .notNull(),
+  optionId: uuid("option_id")
+    .references(() => proposalOptions.id)
+    .notNull(),
+  userId: uuid("user_id").references(() => users.id),
+  platformIdentityId: uuid("platform_identity_id")
+    .references(() => platformIdentities.id),
+  reasoning: text("reasoning"), // agents should always populate this
+  castAt: timestamp("cast_at", { withTimezone: true }).defaultNow().notNull(),
+  changedAt: timestamp("changed_at", { withTimezone: true }), // NULL if never changed
+}, (table) => [
+  unique().on(table.proposalId, table.userId),
+  unique().on(table.proposalId, table.platformIdentityId),
+]);
 
 // --- Milestones ---
 
