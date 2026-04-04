@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
         count: sql<number>`count(*)::int`,
       })
       .from(attendances)
-      .where(eq(attendances.status, "checked_in"))
+      .where(and(eq(attendances.status, "checked_in"), isNotNull(attendances.userId)))
       .groupBy(attendances.activityId);
     for (const c of counts) {
       countMap.set(c.activityId, c.count);

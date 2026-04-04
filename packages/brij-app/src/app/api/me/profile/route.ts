@@ -200,7 +200,7 @@ export async function GET() {
           cardUrl: activities.cardUrl,
           photoUrl: activities.photoUrl,
           summary: activities.summary,
-          attendeeCount: sql<number>`(SELECT count(*) FROM attendances WHERE activity_id = ${activities.id} AND status = 'checked_in')::int`,
+          attendeeCount: sql<number>`(SELECT count(*) FROM attendances WHERE activity_id = ${activities.id} AND status = 'checked_in' AND user_id IS NOT NULL)::int`,
           isCoordinator: sql<boolean>`${activities.coordinatorId} = ${user.id}`,
         })
         .from(activities)

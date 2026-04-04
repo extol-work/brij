@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { activities, attendances } from "@/db/schema";
 import { authenticateBot } from "@/lib/bot-auth";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNotNull } from "drizzle-orm";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,6 +30,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       and(
         eq(attendances.activityId, id),
         eq(attendances.status, "checked_in"),
+        isNotNull(attendances.userId),
       )
     );
 

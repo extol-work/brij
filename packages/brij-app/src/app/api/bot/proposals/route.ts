@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { proposals, proposalOptions, platformIdentities, votes } from "@/db/schema";
 import { authenticateBot } from "@/lib/bot-auth";
 import { validateText, truncate, limits } from "@/lib/validate";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNotNull } from "drizzle-orm";
 
 /**
  * POST /api/bot/proposals — Create a quick vote or formal proposal
@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
       const [voteCount] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(votes)
-        .where(eq(votes.proposalId, p.id));
+        .where(and(eq(votes.proposalId, p.id), isNotNull(votes.userId)));
 
       return {
         id: p.id,
