@@ -92,23 +92,36 @@ export async function POST(req: NextRequest, { params }: Params) {
     identity = created;
   }
 
-  // Check for existing vote by this platform identity
-  const existingVote = await db.query.votes.findFirst({
+  // Check for existing vote by this platform identity OR by the linked Extol user.
+  // If a Discord user is linked to an Extol account that already voted via web,
+  // they're the same person — update rather than duplicate.
+  let existingVote = await db.query.votes.findFirst({
     where: and(
       eq(votes.proposalId, id),
       eq(votes.platformIdentityId, identity.id),
     ),
   });
 
+  // Also check if the linked Extol user already voted (via web or another platform)
+  if (!existingVote && identity.userId) {
+    existingVote = await db.query.votes.findFirst({
+      where: and(
+        eq(votes.proposalId, id),
+        eq(votes.userId, identity.userId),
+      ),
+    });
+  }
+
   let voteId: string;
   let changed = false;
 
   if (existingVote) {
-    // Update existing vote
+    // Update existing vote (same person, different interface)
     const [updated] = await db
       .update(votes)
       .set({
         optionId: option_id,
+        platformIdentityId: identity.id, // track which interface was used last
         reasoning: reasoning || existingVote.reasoning,
         changedAt: new Date(),
       })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { activities, attendances } from "@/db/schema";
+import { activities, attendances, platformIdentities } from "@/db/schema";
 import { authenticateBot } from "@/lib/bot-auth";
 import { generateShareCode } from "@/lib/share-code";
 import { validateText, truncate, limits } from "@/lib/validate";
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   const body = await req.json();
-  const { title, description, duration_minutes, location, platform_event_id, activity_type } = body;
+  const { title, description, duration_minutes, location, platform_event_id, activity_type, platform_user_id } = body;
 
   if (!title || typeof title !== "string") {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
@@ -38,6 +38,44 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Resolve creator identity from platform_user_id (e.g. "discord:123456789")
+  let coordinatorId: string = auth.createdById;
+  let createdByPlatformIdentityId: string | null = null;
+
+  if (platform_user_id && typeof platform_user_id === "string") {
+    const colonIdx = platform_user_id.indexOf(":");
+    if (colonIdx !== -1) {
+      const platform = platform_user_id.slice(0, colonIdx);
+      const platformId = platform_user_id.slice(colonIdx + 1);
+
+      let identity = await db.query.platformIdentities.findFirst({
+        where: and(
+          eq(platformIdentities.platform, platform),
+          eq(platformIdentities.platformUserId, platformId),
+          eq(platformIdentities.groupId, auth.groupId),
+        ),
+      });
+
+      if (!identity) {
+        const [created] = await db
+          .insert(platformIdentities)
+          .values({
+            platform,
+            platformUserId: platformId,
+            groupId: auth.groupId,
+          })
+          .returning();
+        identity = created;
+      }
+
+      createdByPlatformIdentityId = identity.id;
+      // If linked to an Extol user, use them as coordinator
+      if (identity.userId) {
+        coordinatorId = identity.userId;
+      }
+    }
+  }
+
   const now = new Date();
   const endsAt = new Date(now.getTime() + duration_minutes * 60 * 1000);
 
@@ -46,7 +84,7 @@ export async function POST(req: NextRequest) {
     .values({
       title: truncate(title, limits.MAX_TITLE),
       description: description ? truncate(description, limits.MAX_DESCRIPTION) : null,
-      coordinatorId: auth.createdById,
+      coordinatorId,
       groupId: auth.groupId,
       status: "open",
       startsAt: now,
@@ -54,6 +92,7 @@ export async function POST(req: NextRequest) {
       location: location || null,
       shareCode: generateShareCode(),
       platformEventId: platform_event_id || null,
+      createdByPlatformIdentityId,
       activityType: activity_type || null,
     })
     .returning();

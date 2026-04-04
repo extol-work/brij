@@ -6,6 +6,7 @@ import {
   boolean,
   integer,
   decimal,
+  jsonb,
   pgEnum,
   primaryKey,
   unique,
@@ -236,6 +237,8 @@ export const activities = pgTable("activities", {
   seriesId: uuid("series_id"),
   activityType: text("activity_type"),
   platformEventId: text("platform_event_id"), // Discord event ID, etc.
+  createdByPlatformIdentityId: uuid("created_by_platform_identity_id")
+    .references(() => platformIdentities.id), // platform user who initiated via bot
   photoUrl: text("photo_url"),
   cardUrl: text("card_url"), // pre-generated card image in Vercel Blob
   summary: text("summary"),
@@ -408,6 +411,7 @@ export const botApiKeys = pgTable("bot_api_keys", {
   rateLimit: integer("rate_limit").default(30).notNull(), // req/min, derived from tier
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  coordinatorRoleIds: jsonb("coordinator_role_ids"), // Discord role IDs that grant coordinator access
   createdById: uuid("created_by_id")
     .references(() => users.id)
     .notNull(),

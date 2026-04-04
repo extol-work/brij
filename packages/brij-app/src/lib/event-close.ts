@@ -64,11 +64,15 @@ export async function pushActivityClosed(
       displayName = user?.name || user?.email || "Member";
       if (checkin.userId === coordinatorId) creatorIncluded = true;
     } else if (checkin.platformIdentityId) {
-      // Platform identity (bot-originated) — derive from platform prefix
+      // Platform identity (bot-originated)
       const pi = await db.query.platformIdentities.findFirst({
         where: eq(platformIdentities.id, checkin.platformIdentityId),
       });
       if (!pi) continue;
+      // Only attest linked platform identities (those with an Extol account).
+      // Unlinked guests stay in Postgres for group stats but don't go on-chain —
+      // no stable verified identity to derive from, high sybil risk.
+      if (!pi.userId) continue;
       // HMAC derivation input: communityId:platform:platformUserId:epoch
       derivationInput = `${communityId}:${pi.platform}:${pi.platformUserId}:${epoch}`;
       displayName = pi.platformUsername || `${pi.platform}:${pi.platformUserId}`;
