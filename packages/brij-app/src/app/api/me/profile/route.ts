@@ -321,17 +321,35 @@ export async function GET() {
     })
   );
 
+  // Personal contributions (groupId is null)
+  const personalContribs = await db
+    .select({
+      id: contributions.id,
+      description: contributions.description,
+      contributionType: contributions.contributionType,
+      evidenceUrl: contributions.evidenceUrl,
+      createdAt: contributions.createdAt,
+    })
+    .from(contributions)
+    .where(
+      and(eq(contributions.createdBy, user.id), isNull(contributions.groupId))
+    )
+    .orderBy(desc(contributions.createdAt))
+    .limit(10);
+
   // Cross-community feed (last 10 items across all groups)
   type CrossFeedItem = {
-    type: "activity" | "journal";
+    type: "activity" | "journal" | "contribution";
     date: string;
-    groupId: string;
+    groupId: string | null;
     groupName: string;
     groupColor: string;
     title: string;
     detail?: string;
     activityId?: string;
     text?: string;
+    contributionType?: string;
+    evidenceUrl?: string | null;
   };
 
   const crossFeed: CrossFeedItem[] = [];
@@ -361,6 +379,21 @@ export async function GET() {
       }
     }
   }
+
+  // Add personal contributions to cross-feed
+  for (const c of personalContribs) {
+    crossFeed.push({
+      type: "contribution",
+      date: c.createdAt.toISOString(),
+      groupId: null,
+      groupName: "Personal",
+      groupColor: "#8B5CF6", // violet to match smiley
+      title: c.description,
+      contributionType: c.contributionType,
+      evidenceUrl: c.evidenceUrl,
+    });
+  }
+
   crossFeed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return NextResponse.json({

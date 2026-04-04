@@ -460,6 +460,7 @@ function JournalSection({
         setEntries((prev) => [entry, ...prev]);
         track("journal_post", { group_id: group!.id, word_count: text.trim().split(/\s+/).length });
         setText("");
+        setShowDetails(false);
         setExpanded(false);
       }
     }
@@ -594,7 +595,7 @@ function JournalSection({
             }}
             className="text-xs text-warm-gray-400 hover:text-violet-600 px-3.5 pb-2.5 transition-colors"
           >
-            {isPersonal ? "+ Link evidence" : "+ Add details"}
+            {isPersonal ? "+ Link artifact" : "+ Add details"}
           </button>
         )}
 

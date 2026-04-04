@@ -64,15 +64,17 @@ interface GroupData {
 }
 
 interface CrossFeedItem {
-  type: "activity" | "journal";
+  type: "activity" | "journal" | "contribution";
   date: string;
-  groupId: string;
+  groupId: string | null;
   groupName: string;
   groupColor: string;
   title: string;
   detail?: string;
   activityId?: string;
   text?: string;
+  contributionType?: string;
+  evidenceUrl?: string | null;
 }
 
 interface MeProfile {
@@ -196,6 +198,16 @@ function FeedItemRow({
         <div className="text-base text-warm-gray-500 mt-0.5 italic">
           &ldquo;{item.text.length > 100 ? item.text.slice(0, 100) + "…" : item.text}&rdquo;
         </div>
+      )}
+      {item.type === "contribution" && "evidenceUrl" in item && item.evidenceUrl && (
+        <a
+          href={item.evidenceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-violet-600 hover:underline mt-0.5 block truncate"
+        >
+          {item.evidenceUrl}
+        </a>
       )}
     </div>
   );
