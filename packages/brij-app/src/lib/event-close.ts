@@ -14,7 +14,7 @@
  */
 
 import { db } from "@/db";
-import { activities, attendances, users, platformIdentities } from "@/db/schema";
+import { activities, attendances, users, platformIdentities, attestationEdges } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { pushEventClosed } from "@/lib/cortex";
 import { getGroupTier } from "@/lib/community-plan";
@@ -137,4 +137,59 @@ export async function pushActivityClosed(
     attendeeList,
     cortexTier
   ).catch(() => {});
+
+  // Materialize co-attendance edges for weight calculations
+  // Every pair of checked-in users with brij accounts gets a bidirectional edge
+  if (groupId) {
+    const userIds = checkins
+      .filter((c) => c.userId)
+      .map((c) => c.userId!);
+
+    // Include coordinator if they were injected
+    if (coordinatorId && !creatorIncluded) {
+      userIds.push(coordinatorId);
+    }
+
+    if (userIds.length >= 2) {
+      const edges: {
+        groupId: string;
+        attestorId: string;
+        subjectId: string;
+        edgeType: string;
+        sourceId: string;
+      }[] = [];
+
+      for (let i = 0; i < userIds.length; i++) {
+        for (let j = i + 1; j < userIds.length; j++) {
+          // Bidirectional: A attests B and B attests A
+          edges.push({
+            groupId,
+            attestorId: userIds[i],
+            subjectId: userIds[j],
+            edgeType: "co_attendance",
+            sourceId: activityId,
+          });
+          edges.push({
+            groupId,
+            attestorId: userIds[j],
+            subjectId: userIds[i],
+            edgeType: "co_attendance",
+            sourceId: activityId,
+          });
+        }
+      }
+
+      // Insert with ON CONFLICT DO NOTHING (idempotent)
+      if (edges.length > 0) {
+        try {
+          await db
+            .insert(attestationEdges)
+            .values(edges)
+            .onConflictDoNothing();
+        } catch {
+          // Best-effort — don't fail the close
+        }
+      }
+    }
+  }
 }

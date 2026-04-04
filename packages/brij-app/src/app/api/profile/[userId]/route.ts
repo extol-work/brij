@@ -6,7 +6,7 @@ import {
   groupMemberships,
   activities,
   attendances,
-  contributions,
+  eventContributions,
   journalEntries,
 } from "@/db/schema";
 import { eq, and, count, isNull, desc, inArray } from "drizzle-orm";
@@ -250,12 +250,12 @@ export async function GET(
   if (allActivityIds.length > 0) {
     const contribs = await db
       .select({
-        type: contributions.type,
+        type: eventContributions.type,
         count: count(),
       })
-      .from(contributions)
-      .where(eq(contributions.userId, userId))
-      .groupBy(contributions.type);
+      .from(eventContributions)
+      .where(eq(eventContributions.userId, userId))
+      .groupBy(eventContributions.type);
     contributionBreakdown = contribs.map((c) => ({
       type: c.type,
       count: c.count,

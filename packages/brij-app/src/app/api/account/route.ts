@@ -7,7 +7,10 @@ import {
   sessions,
   activities,
   attendances,
+  eventContributions,
   contributions,
+  contributionMembers,
+  attestationEdges,
   peerAttestations,
   journalEntries,
   groupMemberships,
@@ -99,8 +102,16 @@ export async function DELETE() {
   await db.delete(peerAttestations).where(eq(peerAttestations.attesterId, userId));
   await db.delete(peerAttestations).where(eq(peerAttestations.attesteeId, userId));
 
-  // 2. Contributions
-  await db.delete(contributions).where(eq(contributions.userId, userId));
+  // 1b. Attestation edges (where user is attestor or subject)
+  await db.delete(attestationEdges).where(eq(attestationEdges.attestorId, userId));
+  await db.delete(attestationEdges).where(eq(attestationEdges.subjectId, userId));
+
+  // 1c. Contribution members (where user is a collaborator)
+  await db.delete(contributionMembers).where(eq(contributionMembers.userId, userId));
+
+  // 2. Contributions (new group-scoped + legacy event-scoped)
+  await db.delete(contributions).where(eq(contributions.createdBy, userId));
+  await db.delete(eventContributions).where(eq(eventContributions.userId, userId));
 
   // 3. Attendances
   await db.delete(attendances).where(eq(attendances.userId, userId));
@@ -128,7 +139,7 @@ export async function DELETE() {
         .where(eq(activities.groupId, groupId));
       for (const act of groupActivities) {
         await db.delete(peerAttestations).where(eq(peerAttestations.activityId, act.id));
-        await db.delete(contributions).where(eq(contributions.activityId, act.id));
+        await db.delete(eventContributions).where(eq(eventContributions.activityId, act.id));
         await db.delete(attendances).where(eq(attendances.activityId, act.id));
       }
       await db.delete(activities).where(eq(activities.groupId, groupId));
@@ -146,7 +157,7 @@ export async function DELETE() {
 
   for (const act of userActivities) {
     await db.delete(peerAttestations).where(eq(peerAttestations.activityId, act.id));
-    await db.delete(contributions).where(eq(contributions.activityId, act.id));
+    await db.delete(eventContributions).where(eq(eventContributions.activityId, act.id));
     await db.delete(attendances).where(eq(attendances.activityId, act.id));
     await db.delete(activities).where(eq(activities.id, act.id));
   }

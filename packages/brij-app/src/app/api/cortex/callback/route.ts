@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
  * Updates the activity's attestationStatus so downstream consumers
  * (Tempo exports, /me page, admin views) know the on-chain status.
  *
- * Body: { activityId: string, status: "confirmed" | "failed", txSignature?: string }
+ * Body: { activityId: string, status: "confirmed" | "failed", txSignature?: string, error?: string }
  */
 export async function POST(req: NextRequest) {
   const apiKey = process.env.CORTEX_API_KEY;
@@ -24,10 +24,11 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { activityId, status, txSignature } = body as {
+  const { activityId, status, txSignature, error: errorMsg } = body as {
     activityId?: string;
     status?: string;
     txSignature?: string;
+    error?: string;
   };
 
   if (!activityId || !status) {
@@ -36,6 +37,10 @@ export async function POST(req: NextRequest) {
 
   if (status !== "confirmed" && status !== "failed") {
     return NextResponse.json({ error: "Invalid status, expected 'confirmed' or 'failed'" }, { status: 400 });
+  }
+
+  if (status === "failed") {
+    console.error(`[cortex-callback] Attestation failed for activity ${activityId}: ${errorMsg ?? "no reason given"}`);
   }
 
   const [updated] = await db

@@ -261,9 +261,9 @@ export const attendances = pgTable("attendances", {
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
 });
 
-// --- Contributions ---
+// --- Event Contributions (legacy: in-kind contributions to events) ---
 
-export const contributions = pgTable("contributions", {
+export const eventContributions = pgTable("event_contributions", {
   id: uuid("id").defaultRandom().primaryKey(),
   activityId: uuid("activity_id")
     .references(() => activities.id, { onDelete: "cascade" })
@@ -276,6 +276,59 @@ export const contributions = pgTable("contributions", {
   unit: text("unit"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// --- Contributions (group-scoped work contributions) ---
+
+export const contributions = pgTable("contributions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  description: text("description").notNull(),
+  evidenceUrl: text("evidence_url"),
+  createdBy: uuid("created_by")
+    .references(() => users.id)
+    .notNull(),
+  attestationStatus: text("attestation_status").default("none"), // 'none' | 'pending' | 'confirmed' | 'failed'
+  txSignature: text("tx_signature"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// --- Contribution Members (collaborator tagging + confirmation) ---
+
+export const contributionMembers = pgTable("contribution_members", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  contributionId: uuid("contribution_id")
+    .references(() => contributions.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  confirmed: boolean("confirmed").default(false).notNull(),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+}, (table) => [
+  unique().on(table.contributionId, table.userId),
+]);
+
+// --- Attestation Edges (materialized graph for weight calculations) ---
+
+export const attestationEdges = pgTable("attestation_edges", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .references(() => groups.id, { onDelete: "cascade" })
+    .notNull(),
+  attestorId: uuid("attestor_id")
+    .references(() => users.id)
+    .notNull(),
+  subjectId: uuid("subject_id")
+    .references(() => users.id)
+    .notNull(),
+  edgeType: text("edge_type").notNull(), // 'co_attendance', 'peer_witness', 'contribution_confirmation'
+  sourceId: uuid("source_id").notNull(), // activity ID or contribution ID
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique().on(table.attestorId, table.subjectId, table.edgeType, table.sourceId),
+]);
 
 // --- Peer Attestations ---
 

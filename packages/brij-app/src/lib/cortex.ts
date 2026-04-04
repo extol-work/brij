@@ -76,6 +76,41 @@ export async function pushEventClosed(
   });
 }
 
+/** Peer attestation — one member attests another's contribution */
+export function pushPeerAttestation(
+  communityId: string,
+  attestorDerivationInput: string,
+  subjectDerivationInput: string,
+  activityId: string,
+  description: string,
+  createdAt: string
+) {
+  pushToCortex("/peer-attestation", {
+    communityId,
+    attestorDerivationInput,
+    subjectDerivationInput,
+    activityId,
+    description,
+    createdAt,
+  }).catch(() => {});
+}
+
+/** Vote closed — governance participation attestation */
+export function pushVoteClosed(
+  communityId: string,
+  proposalId: string,
+  closedAt: string,
+  voters: { derivationInput: string; displayName: string }[]
+) {
+  // TODO: Enable after Charon's activity_type migration lands (activity_type=3)
+  pushToCortex("/vote-closed", {
+    communityId,
+    proposalId,
+    closedAt,
+    voters,
+  }).catch(() => {});
+}
+
 /** User deleted — GDPR PDA cleanup */
 export function pushUserDeleted(communityId: string, userId: string) {
   pushToCortex("/user-deleted", { communityId, userId }).catch(() => {});
