@@ -201,18 +201,21 @@ function isUpcoming(a: Activity) {
 function GroupSwitcher({
   groups,
   activeGroupId,
+  isPersonal,
   onSelect,
+  onSelectMe,
 }: {
   groups: Group[];
   activeGroupId: string | null;
+  isPersonal: boolean;
   onSelect: (id: string) => void;
+  onSelectMe: () => void;
 }) {
   if (groups.length === 0) return null;
 
-  // Responsive: each circle is ~68px (52px + 16px gap). Reserve ~136px for overflow + "+" circle.
-  // On mobile (~375px viewport), that's ~3-4 visible. On desktop, more.
-  const MAX_VISIBLE = typeof window !== "undefined" ? Math.max(3, Math.floor((window.innerWidth - 136) / 68)) : 4;
-  const overflow = groups.length > MAX_VISIBLE ? groups.length - MAX_VISIBLE + 1 : 0; // +1 to make room for overflow badge
+  // Responsive: each circle is ~68px (52px + 16px gap). Reserve ~68px for "Me" circle.
+  const MAX_VISIBLE = typeof window !== "undefined" ? Math.max(3, Math.floor((window.innerWidth - 68) / 68)) : 4;
+  const overflow = groups.length > MAX_VISIBLE ? groups.length - MAX_VISIBLE + 1 : 0;
   const visible = overflow > 0 ? groups.slice(0, MAX_VISIBLE - 1) : groups;
 
   return (
@@ -225,17 +228,17 @@ function GroupSwitcher({
         >
           <div
             className={`w-[52px] h-[52px] rounded-full flex items-center justify-center text-lg font-bold text-white ${
-              activeGroupId === g.id
+              !isPersonal && activeGroupId === g.id
                 ? "ring-[2.5px] ring-offset-2 ring-violet-600"
                 : ""
             }`}
-            style={{ backgroundColor: g.color }}
+            style={{ backgroundColor: g.color, opacity: isPersonal ? 0.5 : 1 }}
           >
             {g.name.charAt(0).toUpperCase()}
           </div>
           <span
             className={`text-[11px] max-w-[60px] text-center truncate ${
-              activeGroupId === g.id
+              !isPersonal && activeGroupId === g.id
                 ? "text-bark-900 font-semibold"
                 : "text-warm-gray-500"
             }`}
@@ -251,23 +254,35 @@ function GroupSwitcher({
           href="/groups"
           className="flex flex-col items-center gap-1 shrink-0"
         >
-          <div className="w-[52px] h-[52px] rounded-full bg-warm-gray-200 flex items-center justify-center text-sm font-bold text-warm-gray-500">
+          <div className="w-[52px] h-[52px] rounded-full bg-warm-gray-200 flex items-center justify-center text-sm font-bold text-warm-gray-500" style={{ opacity: isPersonal ? 0.5 : 1 }}>
             +{overflow}
           </div>
           <span className="text-[11px] text-warm-gray-400 max-w-[60px] text-center truncate">more</span>
         </Link>
       )}
 
-      {/* + circle — always visible */}
-      <Link
-        href={overflow > 0 ? "/groups/new" : "/groups"}
+      {/* Me circle — smiley face, personal journal context */}
+      <button
+        onClick={onSelectMe}
         className="flex flex-col items-center gap-1 shrink-0"
       >
-        <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: "#c4b8a8" }}>
-          <span className="text-2xl leading-none text-white font-bold">+</span>
+        <div
+          className={`w-[52px] h-[52px] rounded-full flex items-center justify-center text-2xl transition-colors ${
+            isPersonal
+              ? "ring-[2.5px] ring-offset-2 ring-violet-600 bg-violet-50"
+              : "bg-[#FEFCF8] border-2 border-warm-gray-200"
+          }`}
+        >
+          ☺
         </div>
-        <span className="text-[11px] text-transparent">.</span>
-      </Link>
+        <span
+          className={`text-[11px] ${
+            isPersonal ? "text-violet-600 font-semibold" : "text-warm-gray-500"
+          }`}
+        >
+          Me
+        </span>
+      </button>
     </div>
   );
 }
@@ -278,11 +293,14 @@ function JournalSection({
   group,
   userId,
   userInitial,
+  userName,
 }: {
-  group: Group;
+  group: Group | null;
   userId: string;
   userInitial: string;
+  userName?: string;
 }) {
+  const isPersonal = !group;
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [contribs, setContribs] = useState<ContributionData[]>([]);
   const [expanded, setExpanded] = useState(false);
@@ -315,23 +333,32 @@ function JournalSection({
 
   // Prefetch entries + contributions on mount
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/groups/${group.id}/journal`).then((r) => r.json()),
-      fetch(`/api/contributions?groupId=${group.id}`).then((r) => r.json()),
-    ])
+    const fetchKey = isPersonal ? "personal" : group!.id;
+    const promises: Promise<unknown>[] = [];
+
+    if (isPersonal) {
+      // Personal mode: no journal entries, only contributions
+      promises.push(Promise.resolve([]));
+      promises.push(fetch("/api/contributions?personal=true").then((r) => r.json()));
+    } else {
+      promises.push(fetch(`/api/groups/${group!.id}/journal`).then((r) => r.json()));
+      promises.push(fetch(`/api/contributions?groupId=${group!.id}`).then((r) => r.json()));
+    }
+
+    Promise.all(promises)
       .then(([journalData, contribData]) => {
-        if (Array.isArray(journalData)) setEntries(journalData);
+        if (Array.isArray(journalData)) setEntries(journalData as JournalEntry[]);
         if (Array.isArray(contribData)) {
           setContribs(
-            contribData.map((c: Record<string, unknown>) => ({
+            (contribData as Array<Record<string, unknown>>).map((c) => ({
               id: c.id as string,
               description: c.description as string,
               contributionType: c.contributionType as ContributionData["contributionType"],
               evidenceUrl: c.evidenceUrl as string | null,
               createdBy: c.createdBy as string,
               createdByName: c.creatorName as string | null,
-              groupId: group.id,
-              groupName: group.name,
+              groupId: isPersonal ? null : group!.id,
+              groupName: isPersonal ? null : group!.name,
               createdAt: c.createdAt as string,
               members: ((c.collaborators as Array<Record<string, unknown>>) || []).map((m) => ({
                 userId: m.userId as string,
@@ -346,7 +373,8 @@ function JournalSection({
         }
       })
       .finally(() => setLoaded(true));
-  }, [group.id, group.name]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPersonal ? "personal" : group?.id]);
 
   const todayEntries = entries.filter((e) => {
     const d = new Date(e.createdAt);
@@ -376,34 +404,34 @@ function JournalSection({
     if (!text.trim()) return;
     setPosting(true);
 
-    if (hasDetails) {
-      // Post as contribution
+    if (isPersonal || hasDetails) {
+      // Post as contribution (personal mode always posts as contribution)
       const res = await fetch("/api/contributions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          groupId: group.id,
+          groupId: isPersonal ? undefined : group!.id,
           description: text.trim(),
           evidenceUrl: evidenceUrl.trim() || undefined,
-          collaboratorIds: collaborators.map((c) => c.id),
+          collaboratorIds: isPersonal ? [] : collaborators.map((c) => c.id),
         }),
       });
       if (res.ok) {
         const result = await res.json();
         track("contribution_post", {
-          group_id: group.id,
+          group_id: isPersonal ? null : group!.id,
           type: collaborators.length > 0 ? "collaborative" : evidenceUrl.trim() ? "published_work" : "solo_self_report",
+          personal: isPersonal,
         });
-        // Add to local contribs list
         setContribs((prev) => [{
           id: result.id,
           description: text.trim(),
           contributionType: result.contributionType,
           evidenceUrl: evidenceUrl.trim() || null,
           createdBy: userId,
-          createdByName: userInitial, // will show initial
-          groupId: group.id,
-          groupName: group.name,
+          createdByName: userInitial,
+          groupId: isPersonal ? null : group!.id,
+          groupName: isPersonal ? null : group!.name,
           createdAt: result.createdAt,
           members: collaborators.map((c) => ({
             userId: c.id,
@@ -421,8 +449,8 @@ function JournalSection({
         setExpanded(false);
       }
     } else {
-      // Post as journal entry
-      const res = await fetch(`/api/groups/${group.id}/journal`, {
+      // Post as journal entry (group mode only)
+      const res = await fetch(`/api/groups/${group!.id}/journal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, ...cachedGeo }),
@@ -430,7 +458,7 @@ function JournalSection({
       if (res.ok) {
         const entry = await res.json();
         setEntries((prev) => [entry, ...prev]);
-        track("journal_post", { group_id: group.id, word_count: text.trim().split(/\s+/).length });
+        track("journal_post", { group_id: group!.id, word_count: text.trim().split(/\s+/).length });
         setText("");
         setExpanded(false);
       }
@@ -439,7 +467,8 @@ function JournalSection({
   }
 
   async function handleDelete(entryId: string) {
-    const res = await fetch(`/api/groups/${group.id}/journal`, {
+    if (isPersonal) return; // Personal mode has no journal entries
+    const res = await fetch(`/api/groups/${group!.id}/journal`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entryId }),
@@ -504,7 +533,11 @@ function JournalSection({
     <div className="mb-6" ref={journalRef}>
       <div className="flex justify-between items-center mb-2 px-1">
         <h3 className="text-base font-bold text-bark-900">
-          Journal <span style={{ color: group.color }}>for {group.name}</span>
+          {isPersonal ? (
+            <>Journal <span className="text-violet-600">— {userName || "Me"}</span></>
+          ) : (
+            <>Journal <span style={{ color: group!.color }}>for {group!.name}</span></>
+          )}
         </h3>
       </div>
 
@@ -561,21 +594,23 @@ function JournalSection({
             }}
             className="text-xs text-warm-gray-400 hover:text-violet-600 px-3.5 pb-2.5 transition-colors"
           >
-            + Add details
+            {isPersonal ? "+ Link evidence" : "+ Add details"}
           </button>
         )}
 
         {/* Contribution compose expansion */}
         {showDetails && (
           <div className="px-3.5 pb-3.5 pt-1 border-t border-warm-gray-100 mt-1">
-            <MemberSearch
-              groupId={group.id}
-              selected={collaborators}
-              onSelect={(m) => setCollaborators((prev) => [...prev, m])}
-              onRemove={(id) => setCollaborators((prev) => prev.filter((c) => c.id !== id))}
-            />
+            {!isPersonal && (
+              <MemberSearch
+                groupId={group!.id}
+                selected={collaborators}
+                onSelect={(m) => setCollaborators((prev) => [...prev, m])}
+                onRemove={(id) => setCollaborators((prev) => prev.filter((c) => c.id !== id))}
+              />
+            )}
 
-            <div className="mt-3">
+            <div className={isPersonal ? "" : "mt-3"}>
               <label className="text-xs font-semibold text-warm-gray-500 mb-1 block">
                 Evidence <span className="font-normal">(optional)</span>
               </label>
@@ -636,9 +671,11 @@ function JournalSection({
       {/* Empty state */}
       {!expanded && loaded && entries.length === 0 && contribs.length === 0 && (
         <p className="text-sm text-warm-gray-400 text-center py-3 leading-relaxed">
-          Share what you&apos;re working on.<br />
-          No replies, no pressure — just a record<br />
-          of the work that keeps things running.
+          {isPersonal ? (
+            <>Your personal journal.<br />Log reading notes, published work,<br />or things you&apos;re working on.</>
+          ) : (
+            <>Share what you&apos;re working on.<br />No replies, no pressure — just a record<br />of the work that keeps things running.</>
+          )}
         </p>
       )}
 
@@ -658,12 +695,12 @@ function JournalSection({
           ))}
 
           {/* Today's journal entries */}
-          {todayEntries.slice(0, 2).map((entry) => (
+          {!isPersonal && todayEntries.slice(0, 2).map((entry) => (
             <JournalEntryRow
               key={entry.id}
               entry={entry}
-              groupColor={group.color}
-              canDelete={entry.authorId === userId || group.role === "coordinator"}
+              groupColor={group!.color}
+              canDelete={entry.authorId === userId || group!.role === "coordinator"}
               onDelete={() => handleDelete(entry.id)}
             />
           ))}
@@ -689,8 +726,8 @@ function JournalSection({
           ))}
 
           {/* Past days collapsed */}
-          {pastDays.map(({ label, entries: dayEntries }) => (
-            <CollapsedDay key={label} label={label} entries={dayEntries} groupColor={group.color} />
+          {!isPersonal && pastDays.map(({ label, entries: dayEntries }) => (
+            <CollapsedDay key={label} label={label} entries={dayEntries} groupColor={group!.color} />
           ))}
 
           {/* Weekly rollup */}
@@ -847,6 +884,7 @@ export default function Dashboard() {
   const [attended, setAttended] = useState<Activity[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [isPersonalContext, setIsPersonalContext] = useState(false);
   const [loading, setLoading] = useState(true);
   const [startingNow, setStartingNow] = useState(false);
   const [pastLimit, setPastLimit] = useState(10);
@@ -1013,7 +1051,12 @@ export default function Dashboard() {
         <GroupSwitcher
           groups={groups}
           activeGroupId={activeGroupId}
-          onSelect={setActiveGroupId}
+          isPersonal={isPersonalContext}
+          onSelect={(id) => {
+            setActiveGroupId(id);
+            setIsPersonalContext(false);
+          }}
+          onSelectMe={() => setIsPersonalContext(true)}
         />
 
         {/* Now Button */}
@@ -1043,8 +1086,13 @@ export default function Dashboard() {
         </p>
 
         {/* Journal Section */}
-        {activeGroup && (
-          <JournalSection group={activeGroup} userId={userId} userInitial={session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?"} />
+        {(isPersonalContext || activeGroup) && (
+          <JournalSection
+            group={isPersonalContext ? null : activeGroup}
+            userId={userId}
+            userInitial={session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?"}
+            userName={session?.user?.name || undefined}
+          />
         )}
 
         {/* Activities */}
