@@ -41,17 +41,21 @@ export function ContributionCard({
   currentUserId,
   onSign,
   onDismiss,
+  onDelete,
   rateLimitReached,
 }: {
   contribution: ContributionData;
   currentUserId: string;
   onSign?: (id: string) => Promise<void>;
   onDismiss?: (id: string) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   rateLimitReached?: boolean;
 }) {
   const [signing, setSigning] = useState(false);
   const [dismissing, setDismissing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showDismissConfirm, setShowDismissConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [localConfirmed, setLocalConfirmed] = useState(false);
   const [localDismissed, setLocalDismissed] = useState(false);
 
@@ -251,6 +255,44 @@ export function ContributionCard({
         <p className="text-[11px] text-amber-600 mt-1">
           You&apos;ve reached today&apos;s limit (5 signatures). Try again tomorrow.
         </p>
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mb-2">
+          <p className="text-[13px] font-semibold text-red-800 mb-1">Delete this entry?</p>
+          <p className="text-xs text-red-700 mb-2">This cannot be undone.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                if (!onDelete) return;
+                setDeleting(true);
+                await onDelete(c.id);
+                setDeleting(false);
+              }}
+              disabled={deleting}
+              className="px-3 py-1.5 text-xs font-medium border border-red-300 rounded-lg text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Yes, delete"}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-3 py-1.5 text-xs text-warm-gray-500"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Author delete link */}
+      {isAuthor && onDelete && !showDeleteConfirm && (
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="text-[11px] text-warm-gray-300 hover:text-red-500 transition-colors mt-1"
+        >
+          delete
+        </button>
       )}
 
       {/* Group / personal label */}

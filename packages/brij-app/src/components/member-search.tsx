@@ -26,6 +26,7 @@ export function MemberSearch({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MemberResult[]>([]);
   const [open, setOpen] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,18 +48,20 @@ export function MemberSearch({
     if (!query.trim()) {
       setResults([]);
       setOpen(false);
+      setSearched(false);
       return;
     }
 
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      setSearched(true);
       const res = await fetch(`/api/groups/${groupId}/members/search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         const data: MemberResult[] = await res.json();
         // Filter out already selected
         const filtered = data.filter((m) => !selected.some((s) => s.id === m.id));
         setResults(filtered);
-        setOpen(filtered.length > 0);
+        setOpen(true);
         setHighlightIndex(0);
       }
     }, 200);
@@ -134,9 +137,9 @@ export function MemberSearch({
       <p className="text-[11px] text-warm-gray-400 mt-1">They&apos;ll be asked to sign</p>
 
       {/* Dropdown */}
-      {open && results.length > 0 && (
+      {open && (
         <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-violet-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-          {results.map((m, i) => (
+          {results.length > 0 ? results.map((m, i) => (
             <button
               key={m.id}
               onClick={() => handleSelect(m)}
@@ -152,7 +155,12 @@ export function MemberSearch({
               </span>
               <span className="text-sm font-medium text-bark-900">{m.displayName}</span>
             </button>
-          ))}
+          )) : searched && (
+            <div className="px-3 py-3 text-center">
+              <p className="text-sm text-warm-gray-500 font-medium">No member found</p>
+              <p className="text-xs text-warm-gray-400 mt-0.5">Only members of this group can be tagged</p>
+            </div>
+          )}
         </div>
       )}
     </div>

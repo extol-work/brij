@@ -8,7 +8,8 @@ import {
 } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull, inArray } from "drizzle-orm";
+import { attestationEdges } from "@/db/schema";
 
 const MAX_DESCRIPTION = 2000;
 const MAX_EVIDENCE_URL = 2000;
@@ -263,4 +264,45 @@ export async function GET(req: NextRequest) {
   );
 
   return NextResponse.json(result);
+}
+
+/**
+ * DELETE /api/contributions — delete a contribution (author only)
+ *
+ * Body: { contributionId: string }
+ */
+export async function DELETE(req: NextRequest) {
+  const limited = await checkRateLimit(req, "auth");
+  if (limited) return limited;
+
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const { contributionId } = body;
+
+  if (!contributionId) {
+    return NextResponse.json({ error: "contributionId required" }, { status: 400 });
+  }
+
+  const contribution = await db.query.contributions.findFirst({
+    where: eq(contributions.id, contributionId),
+  });
+
+  if (!contribution) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (contribution.createdBy !== user.id) {
+    return NextResponse.json({ error: "Only the author can delete" }, { status: 403 });
+  }
+
+  // Delete related records then contribution
+  await db.delete(attestationEdges).where(eq(attestationEdges.sourceId, contributionId));
+  await db.delete(contributionMembers).where(eq(contributionMembers.contributionId, contributionId));
+  await db.delete(contributions).where(eq(contributions.id, contributionId));
+
+  return NextResponse.json({ deleted: true });
 }

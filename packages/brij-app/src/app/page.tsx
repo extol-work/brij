@@ -475,6 +475,17 @@ function JournalSection({
     );
   }
 
+  async function handleDeleteContribution(contributionId: string) {
+    const res = await fetch("/api/contributions", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contributionId }),
+    });
+    if (res.ok) {
+      setContribs((prev) => prev.filter((c) => c.id !== contributionId));
+    }
+  }
+
   const weekCount = entries.filter((e) => {
     const d = new Date(e.createdAt);
     const weekAgo = new Date();
@@ -581,7 +592,7 @@ function JournalSection({
             {evidenceUrl.trim() && collaborators.length === 0 && (
               <div className="mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-xs text-blue-700">
-                  &#128279; Link to your published work? This can become an Extol Card.
+                  &#128279; Link to <strong className="text-blue-900">your</strong> published work? This can become an Extol Card.
                 </p>
               </div>
             )}
@@ -642,6 +653,7 @@ function JournalSection({
               currentUserId={userId}
               onSign={handleSign}
               onDismiss={handleDismiss}
+              onDelete={handleDeleteContribution}
             />
           ))}
 
