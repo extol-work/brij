@@ -420,42 +420,42 @@ export default function MePage() {
 
         {/* Profile header — tap avatar/name to return to summary */}
         <div className="text-center pt-2 pb-2 px-5">
-          <button
-            onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
-            className="inline-block"
-          >
-            <div className="relative inline-block">
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
+              className="relative"
+            >
               {profile.image ? (
                 <img
                   src={profile.image}
                   alt={profile.name}
-                  className={`w-16 h-16 rounded-full object-cover mx-auto transition-all ${
+                  className={`w-16 h-16 rounded-full object-cover transition-all ${
                     activeTab === "summary" ? "ring-[2.5px] ring-bark-700" : ""
                   }`}
                 />
               ) : (
-                <div className={`w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center text-white text-2xl font-semibold mx-auto transition-all ${
+                <div className={`w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center text-white text-2xl font-semibold transition-all ${
                   activeTab === "summary" ? "ring-[2.5px] ring-bark-700" : ""
                 }`}>
                   {getInitials(profile.name)}
                 </div>
               )}
-            </div>
-          </button>
-          <button
-            onClick={() => avatarInputRef.current?.click()}
-            className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white border border-warm-gray-200 shadow-sm hover:bg-warm-gray-50 align-top mt-10"
-            title="Change photo"
-          >
-            {uploading ? (
-              <div className="w-3 h-3 border border-bark-900 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-            )}
-          </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
+                className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white border border-warm-gray-200 shadow-sm hover:bg-warm-gray-50"
+                title="Change photo"
+              >
+                {uploading ? (
+                  <div className="w-3 h-3 border border-bark-900 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                )}
+              </button>
+            </button>
+          </div>
           <input
             ref={avatarInputRef}
             type="file"
@@ -467,9 +467,9 @@ export default function MePage() {
             onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
             className="block mx-auto"
           >
-            <div className="text-lg font-bold tracking-tight mt-1">{profile.name}</div>
+            <div className="text-[22px] font-bold tracking-tight mt-1">{profile.name}</div>
           </button>
-          <div className="text-xs text-warm-gray-400 mt-0.5">
+          <div className="text-sm text-warm-gray-400 mt-0.5">
             On Extol since {formatSince(profile.since)}
           </div>
         </div>
@@ -485,7 +485,7 @@ export default function MePage() {
                 className="flex flex-col items-center gap-1 shrink-0"
               >
                 <div
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-white text-base font-semibold transition-all"
+                  className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white text-lg font-bold transition-all"
                   style={{
                     backgroundColor: g.color,
                     border: isActive ? `2.5px solid ${g.color}` : "2.5px solid transparent",
@@ -494,8 +494,8 @@ export default function MePage() {
                 >
                   {g.name.charAt(0).toUpperCase()}
                 </div>
-                <span className={`text-[10px] font-medium truncate max-w-[52px] ${
-                  isActive ? "font-semibold text-bark-900" : "text-warm-gray-400"
+                <span className={`text-[11px] truncate max-w-[60px] text-center ${
+                  isActive ? "font-semibold text-bark-900" : "text-warm-gray-500"
                 }`}>
                   {g.name}
                 </span>
