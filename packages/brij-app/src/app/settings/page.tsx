@@ -5,6 +5,14 @@ import { resetUser } from "@/lib/posthog";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type LinkedAccount = {
+  platform: string;
+  platformUserId: string;
+  platformUsername: string | null;
+  linkedAt: string | null;
+  groups: string[];
+};
+
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const [me, setMe] = useState<{ id: string; email: string; displayName: string | null; consentedAt: string | null } | null>(null);
@@ -18,12 +26,16 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
     fetch("/api/me")
       .then((r) => r.json())
       .then(setMe);
+    fetch("/api/link/accounts")
+      .then((r) => r.json())
+      .then((data) => setLinkedAccounts(data.accounts || []));
   }, [status]);
 
   if (status !== "authenticated" || !me) return null;
@@ -152,6 +164,44 @@ export default function SettingsPage() {
               {exporting ? "Exporting..." : "Download CSV"}
             </button>
             <p className="text-xs text-warm-gray-400 mt-2 text-center">Leave dates blank for all time</p>
+          </div>
+        </div>
+
+        {/* Connected Accounts */}
+        <div>
+          <h2 className="text-sm font-semibold text-warm-gray-500 uppercase tracking-wide mb-3">Connected Accounts</h2>
+          <div className="bg-white border border-warm-gray-200 rounded-xl p-4">
+            {linkedAccounts.length === 0 ? (
+              <div>
+                <p className="text-sm text-warm-gray-400">No platform accounts linked yet.</p>
+                <p className="text-xs text-warm-gray-400 mt-1">
+                  Use <code className="text-bark-900">/extol link</code> in Discord to connect your account.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {linkedAccounts.map((acct) => {
+                  const platformName = acct.platform.charAt(0).toUpperCase() + acct.platform.slice(1);
+                  return (
+                    <div key={`${acct.platform}:${acct.platformUserId}`} className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-bark-900 font-medium">
+                          {platformName}: {acct.platformUsername || acct.platformUserId}
+                        </p>
+                        <p className="text-xs text-warm-gray-400">
+                          {acct.groups.length} group{acct.groups.length !== 1 ? "s" : ""}: {acct.groups.join(", ")}
+                        </p>
+                      </div>
+                      {acct.linkedAt && (
+                        <span className="text-xs text-warm-gray-400">
+                          {new Date(acct.linkedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
