@@ -19,6 +19,7 @@ interface AggregateStats {
   contributions: number;
   signaturesGiven: number;
   signaturesReceived: number;
+  decisions: number;
 }
 
 interface GroupCard {
@@ -569,7 +570,7 @@ function SummaryTab({
           <div className="text-xs text-warm-gray-500 mt-0.5">Endorsements</div>
         </div>
         <div className="bg-white p-4 text-center">
-          <div className="text-2xl font-bold text-violet-600">0</div>
+          <div className="text-2xl font-bold text-violet-600">{aggregate.decisions}</div>
           <div className="text-xs text-warm-gray-500 mt-0.5">Decisions</div>
         </div>
       </div>

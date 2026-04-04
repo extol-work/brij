@@ -12,6 +12,7 @@ import {
   contributions,
   contributionMembers,
   attestationEdges,
+  votes,
 } from "@/db/schema";
 import { eq, and, count, isNull, desc, sql } from "drizzle-orm";
 
@@ -114,6 +115,12 @@ export async function GET() {
     .select({ count: count() })
     .from(attestationEdges)
     .where(eq(attestationEdges.subjectId, user.id));
+
+  // Decisions (distinct proposals the user voted on)
+  const [decisionsCount] = await db
+    .select({ count: count() })
+    .from(votes)
+    .where(eq(votes.userId, user.id));
 
   // Per-group data
   const groupData = await Promise.all(
@@ -410,6 +417,7 @@ export async function GET() {
       contributions: contribCount?.count || 0,
       signaturesGiven: signaturesGiven?.count || 0,
       signaturesReceived: signaturesReceived?.count || 0,
+      decisions: decisionsCount?.count || 0,
     },
     groups: groupData,
     crossFeed: crossFeed.slice(0, 10),

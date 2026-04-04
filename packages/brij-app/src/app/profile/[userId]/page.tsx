@@ -41,6 +41,7 @@ interface ProfileData {
     eventsAttended: number;
     communities: number;
     monthsActive: number;
+    decisions: number;
   };
   roleBreakdown?: { coordinated: number; participated: number };
   contributionBreakdown?: { type: string; count: number }[];
@@ -365,8 +366,8 @@ export default function ProfilePage() {
               label="Communities"
             />
             <HighlightCard
-              value={`${profile.highlights.monthsActive} mo`}
-              label="Active"
+              value={profile.highlights.decisions ?? 0}
+              label="Decisions"
             />
           </div>
         </div>

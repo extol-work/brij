@@ -8,6 +8,7 @@ import {
   attendances,
   eventContributions,
   journalEntries,
+  votes,
 } from "@/db/schema";
 import { eq, and, count, isNull, desc, inArray } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -107,6 +108,12 @@ export async function GET(
       and(eq(attendances.userId, userId), eq(attendances.status, "checked_in"))
     );
 
+  // Count decisions (votes cast)
+  const [decisionsCount] = await db
+    .select({ count: count() })
+    .from(votes)
+    .where(eq(votes.userId, userId));
+
   // Calculate months active
   const monthsActive = Math.max(
     1,
@@ -151,6 +158,7 @@ export async function GET(
     eventsAttended: attended?.count || 0,
     communities: memberships.length,
     monthsActive,
+    decisions: decisionsCount?.count || 0,
   };
 
   // --- Tier 3 (visitor): minimal data ---
