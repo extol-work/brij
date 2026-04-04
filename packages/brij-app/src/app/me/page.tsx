@@ -418,87 +418,90 @@ export default function MePage() {
           </div>
         )}
 
-        {/* Profile header */}
-        <div className="text-center pt-2 pb-4 px-5">
-          <div className="relative inline-block">
-            {profile.image ? (
-              <img
-                src={profile.image}
-                alt={profile.name}
-                className="w-24 h-24 rounded-full object-cover mx-auto"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center text-white text-3xl font-semibold mx-auto">
-                {getInitials(profile.name)}
-              </div>
-            )}
-            <button
-              onClick={() => avatarInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-warm-gray-200 flex items-center justify-center shadow-sm hover:bg-warm-gray-50"
-              title="Change photo"
-            >
-              {uploading ? (
-                <div className="w-3 h-3 border border-bark-900 border-t-transparent rounded-full animate-spin" />
+        {/* Profile header — tap avatar/name to return to summary */}
+        <div className="text-center pt-2 pb-2 px-5">
+          <button
+            onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
+            className="inline-block"
+          >
+            <div className="relative inline-block">
+              {profile.image ? (
+                <img
+                  src={profile.image}
+                  alt={profile.name}
+                  className={`w-16 h-16 rounded-full object-cover mx-auto transition-all ${
+                    activeTab === "summary" ? "ring-[2.5px] ring-bark-700" : ""
+                  }`}
+                />
               ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
+                <div className={`w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center text-white text-2xl font-semibold mx-auto transition-all ${
+                  activeTab === "summary" ? "ring-[2.5px] ring-bark-700" : ""
+                }`}>
+                  {getInitials(profile.name)}
+                </div>
               )}
-            </button>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarUpload}
-            />
-          </div>
-          <div className="text-[22px] font-bold tracking-tight mt-2">{profile.name}</div>
-          <div className="text-sm text-warm-gray-400">
-            On brij since {formatSince(profile.since)}
+            </div>
+          </button>
+          <button
+            onClick={() => avatarInputRef.current?.click()}
+            className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white border border-warm-gray-200 shadow-sm hover:bg-warm-gray-50 align-top mt-10"
+            title="Change photo"
+          >
+            {uploading ? (
+              <div className="w-3 h-3 border border-bark-900 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            )}
+          </button>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
+          <button
+            onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
+            className="block mx-auto"
+          >
+            <div className="text-lg font-bold tracking-tight mt-1">{profile.name}</div>
+          </button>
+          <div className="text-xs text-warm-gray-400 mt-0.5">
+            On Extol since {formatSince(profile.since)}
           </div>
         </div>
 
-        {/* Tab row */}
-        <div className="mx-5 mb-5">
-          <div className="flex bg-white rounded-xl border border-warm-gray-200 overflow-x-auto">
-            {/* Summary tab */}
-            <button
-              onClick={() => { setActiveTab("summary"); setShowAllFeed(false); }}
-              className={`shrink-0 min-w-[90px] flex-1 py-3 px-2 text-center text-sm font-medium border-r border-warm-gray-200 transition-colors ${
-                activeTab === "summary"
-                  ? "bg-bark-900 text-cream font-semibold"
-                  : "text-warm-gray-400 hover:bg-warm-gray-50"
-              }`}
-            >
-              <span className="block text-sm">◉</span>
-              Summary
-            </button>
-
-            {/* Group tabs */}
-            {profile.groups.map((g, i) => (
+        {/* Group rotator — matches dashboard pattern */}
+        <div className="flex gap-3 items-center px-5 pb-4 overflow-x-auto">
+          {profile.groups.map((g) => {
+            const isActive = activeTab === g.groupId;
+            return (
               <button
                 key={g.groupId}
                 onClick={() => { setActiveTab(g.groupId); setShowAllFeed(false); }}
-                className={`shrink-0 min-w-[72px] flex-1 py-3 px-2 text-center text-sm font-medium transition-colors ${
-                  i < profile.groups.length - 1 ? "border-r border-warm-gray-200" : ""
-                } ${
-                  activeTab === g.groupId
-                    ? "bg-bark-900 text-cream font-semibold"
-                    : "text-warm-gray-400 hover:bg-warm-gray-50"
-                }`}
+                className="flex flex-col items-center gap-1 shrink-0"
               >
-                <span
-                  className="block w-4 h-4 rounded-full mx-auto mb-0.5 text-xs text-white flex items-center justify-center font-bold leading-none"
-                  style={{ backgroundColor: g.color }}
+                <div
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-white text-base font-semibold transition-all"
+                  style={{
+                    backgroundColor: g.color,
+                    border: isActive ? `2.5px solid ${g.color}` : "2.5px solid transparent",
+                    opacity: isActive ? 1 : 0.5,
+                  }}
                 >
                   {g.name.charAt(0).toUpperCase()}
+                </div>
+                <span className={`text-[10px] font-medium truncate max-w-[52px] ${
+                  isActive ? "font-semibold text-bark-900" : "text-warm-gray-400"
+                }`}>
+                  {g.name}
                 </span>
-                <span className="truncate block max-w-[56px] mx-auto">{g.name}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {/* Tab content */}
@@ -661,27 +664,15 @@ function GroupTab({
 
   return (
     <>
-      {/* Group info card — taps through to group page */}
-      <Link href={`/groups/${group.groupId}`} className="block bg-white rounded-xl border border-warm-gray-200 p-3 mb-4 hover:border-warm-gray-300 transition-colors">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span
-            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-            style={{ backgroundColor: group.color }}
-          >
-            {group.name.charAt(0).toUpperCase()}
-          </span>
-          <span className="text-base font-semibold text-bark-900">{group.name}</span>
-          <svg className="ml-auto w-4 h-4 text-warm-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </div>
-        <div className="text-sm text-warm-gray-500">
-          Week {group.stats.weeksSinceJoin} · {group.memberCount} members
-        </div>
-        <div className="text-sm text-bark-700 font-medium mt-0.5">
-          {formatRole(group.role)}
-        </div>
-      </Link>
+      {/* Group chip — informational, no link */}
+      <div className="inline-flex items-center gap-1.5 bg-white border border-warm-gray-200 rounded-full px-3.5 py-1.5 mb-4">
+        <span
+          className="w-3.5 h-3.5 rounded-full inline-block"
+          style={{ backgroundColor: group.color }}
+        />
+        <span className="text-xs font-semibold text-bark-900">{group.name}</span>
+        <span className="text-xs text-warm-gray-500">· Week {group.stats.weeksSinceJoin} · {group.memberCount} members</span>
+      </div>
 
       {/* Scoped stats */}
       <div className="text-sm font-semibold uppercase tracking-wider text-warm-gray-500 mb-3">
