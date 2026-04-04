@@ -55,6 +55,14 @@ export async function POST(
     );
   }
 
+  // Personal contributions (no group) cannot be confirmed
+  if (!contribution.groupId) {
+    return NextResponse.json(
+      { error: "Personal contributions cannot be confirmed" },
+      { status: 400 }
+    );
+  }
+
   // Must be a member of the same group
   const membership = await db.query.groupMemberships.findFirst({
     where: and(
@@ -109,20 +117,33 @@ export async function POST(
 
   const now = new Date();
 
-  // If the confirmer is a tagged collaborator, mark them as confirmed
-  await db
-    .update(contributionMembers)
-    .set({ confirmed: true, confirmedAt: now })
-    .where(
-      and(
-        eq(contributionMembers.contributionId, contributionId),
-        eq(contributionMembers.userId, user.id)
-      )
-    );
+  // Check if the confirmer is a tagged collaborator
+  const existingMember = await db.query.contributionMembers.findFirst({
+    where: and(
+      eq(contributionMembers.contributionId, contributionId),
+      eq(contributionMembers.userId, user.id)
+    ),
+  });
+
+  if (existingMember) {
+    // Tagged collaborator — mark as confirmed
+    await db
+      .update(contributionMembers)
+      .set({ confirmed: true, confirmedAt: now })
+      .where(eq(contributionMembers.id, existingMember.id));
+  } else {
+    // Untagged group member vouching — add as confirmed member
+    await db.insert(contributionMembers).values({
+      contributionId,
+      userId: user.id,
+      confirmed: true,
+      confirmedAt: now,
+    });
+  }
 
   // Create attestation edge
   await db.insert(attestationEdges).values({
-    groupId: contribution.groupId,
+    groupId: contribution.groupId!,
     attestorId: user.id,
     subjectId: contribution.createdBy,
     edgeType: "contribution_confirmation",
@@ -138,7 +159,7 @@ export async function POST(
     .digest("hex");
 
   pushPeerAttestation(
-    contribution.groupId,
+    contribution.groupId!,
     attestorDerivationInput,
     subjectDerivationInput,
     contributionId,

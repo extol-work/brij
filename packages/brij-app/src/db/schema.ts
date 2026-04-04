@@ -54,6 +54,12 @@ export const groupMemberStatusEnum = pgEnum("group_member_status", [
   "pending",
 ]);
 
+export const workContributionTypeEnum = pgEnum("work_contribution_type", [
+  "collaborative",
+  "published_work",
+  "solo_self_report",
+]);
+
 export const groupTypeEnum = pgEnum("group_type", [
   "creative",
   "sports",
@@ -282,8 +288,8 @@ export const eventContributions = pgTable("event_contributions", {
 export const contributions = pgTable("contributions", {
   id: uuid("id").defaultRandom().primaryKey(),
   groupId: uuid("group_id")
-    .references(() => groups.id, { onDelete: "cascade" })
-    .notNull(),
+    .references(() => groups.id, { onDelete: "cascade" }),
+  contributionType: workContributionTypeEnum("contribution_type").notNull().default("solo_self_report"),
   description: text("description").notNull(),
   evidenceUrl: text("evidence_url"),
   createdBy: uuid("created_by")

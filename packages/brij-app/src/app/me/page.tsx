@@ -16,6 +16,9 @@ interface AggregateStats {
   groups: number;
   uniquePeopleReached: number;
   journalEntries: number;
+  contributions: number;
+  signaturesGiven: number;
+  signaturesReceived: number;
 }
 
 interface GroupCard {
@@ -536,19 +539,27 @@ function SummaryTab({
 
   return (
     <>
-      {/* Aggregate stats */}
+      {/* Aggregate stats — 4-cell grid per Nereid wireframe */}
       <div className="text-sm font-semibold uppercase tracking-wider text-warm-gray-500 mb-3">
         Across All Groups
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <StatCell num={aggregate.activitiesOrganized} label="activities organized" />
-        <StatCell num={aggregate.groups} label="groups" />
-        <StatCell
-          num={aggregate.uniquePeopleReached}
-          label="people who showed up"
-          highlight
-        />
-        <StatCell num={aggregate.journalEntries} label="journal entries" />
+      <div className="grid grid-cols-2 gap-px bg-warm-gray-200 rounded-xl overflow-hidden mb-5">
+        <div className="bg-white p-4 text-center">
+          <div className="text-2xl font-bold text-bark-900">{aggregate.eventsAttended}</div>
+          <div className="text-xs text-warm-gray-500 mt-0.5">Attended</div>
+        </div>
+        <div className="bg-white p-4 text-center">
+          <div className="text-2xl font-bold" style={{ color: "#8B6548" }}>{aggregate.contributions}</div>
+          <div className="text-xs text-warm-gray-500 mt-0.5">Contributions</div>
+        </div>
+        <div className="bg-white p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">{aggregate.signaturesReceived}</div>
+          <div className="text-xs text-warm-gray-500 mt-0.5">Endorsements</div>
+        </div>
+        <div className="bg-white p-4 text-center">
+          <div className="text-2xl font-bold text-violet-600">0</div>
+          <div className="text-xs text-warm-gray-500 mt-0.5">Decisions</div>
+        </div>
       </div>
 
       <div className="h-px bg-warm-gray-200 my-5" />

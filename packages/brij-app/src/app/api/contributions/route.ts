@@ -8,16 +8,30 @@ import {
 } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 
 const MAX_DESCRIPTION = 2000;
 const MAX_EVIDENCE_URL = 2000;
 const MAX_COLLABORATORS = 20;
 
+type ContributionType = "collaborative" | "published_work" | "solo_self_report";
+
+function deriveContributionType(
+  hasCollaborators: boolean,
+  hasEvidence: boolean
+): ContributionType {
+  if (hasCollaborators) return "collaborative";
+  if (hasEvidence) return "published_work";
+  return "solo_self_report";
+}
+
 /**
  * POST /api/contributions — create a contribution record with optional collaborators
  *
- * Body: { groupId, description, evidenceUrl?, collaboratorIds?: string[] }
+ * Body: { groupId?, description, evidenceUrl?, collaboratorIds?: string[] }
+ *
+ * groupId is optional — null means personal contribution (shows on /me only).
+ * Collaborative contributions require a groupId (need shared membership to tag collaborators).
  */
 export async function POST(req: NextRequest) {
   const limited = await checkRateLimit(req, "auth");
@@ -31,14 +45,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { groupId, description, evidenceUrl, collaboratorIds } = body;
 
-  if (!groupId || !description) {
-    return NextResponse.json(
-      { error: "groupId and description are required" },
-      { status: 400 }
-    );
-  }
-
-  const desc_trimmed = String(description).trim();
+  const desc_trimmed = String(description ?? "").trim();
   if (desc_trimmed.length === 0 || desc_trimmed.length > MAX_DESCRIPTION) {
     return NextResponse.json(
       { error: `Description must be 1-${MAX_DESCRIPTION} characters` },
@@ -53,25 +60,37 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Verify user is an active member of the group
-  const membership = await db.query.groupMemberships.findFirst({
-    where: and(
-      eq(groupMemberships.groupId, groupId),
-      eq(groupMemberships.userId, user.id),
-      eq(groupMemberships.status, "active")
-    ),
-  });
+  const hasCollaborators = Array.isArray(collaboratorIds) && collaboratorIds.length > 0;
 
-  if (!membership) {
+  // Collaborative contributions require a group (need shared membership)
+  if (hasCollaborators && !groupId) {
     return NextResponse.json(
-      { error: "You must be a member of this group" },
-      { status: 403 }
+      { error: "Collaborative contributions require a group" },
+      { status: 400 }
     );
+  }
+
+  // If group-scoped, verify membership
+  if (groupId) {
+    const membership = await db.query.groupMemberships.findFirst({
+      where: and(
+        eq(groupMemberships.groupId, groupId),
+        eq(groupMemberships.userId, user.id),
+        eq(groupMemberships.status, "active")
+      ),
+    });
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "You must be a member of this group" },
+        { status: 403 }
+      );
+    }
   }
 
   // Validate collaborators are active members of the same group (exclude self)
   let validCollaboratorIds: string[] = [];
-  if (Array.isArray(collaboratorIds) && collaboratorIds.length > 0) {
+  if (hasCollaborators) {
     if (collaboratorIds.length > MAX_COLLABORATORS) {
       return NextResponse.json(
         { error: `Maximum ${MAX_COLLABORATORS} collaborators` },
@@ -95,11 +114,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const contributionType = deriveContributionType(
+    validCollaboratorIds.length > 0,
+    !!evidenceUrl
+  );
+
   // Create contribution
   const [contribution] = await db
     .insert(contributions)
     .values({
-      groupId,
+      groupId: groupId || null,
+      contributionType,
       description: desc_trimmed,
       evidenceUrl: evidenceUrl ? String(evidenceUrl).trim() : null,
       createdBy: user.id,
@@ -119,6 +144,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     id: contribution.id,
     groupId: contribution.groupId,
+    contributionType: contribution.contributionType,
     description: contribution.description,
     evidenceUrl: contribution.evidenceUrl,
     createdBy: contribution.createdBy,
@@ -129,6 +155,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/contributions?groupId=xxx — list contributions for a group
+ * GET /api/contributions?personal=true — list personal contributions for authenticated user
  */
 export async function GET(req: NextRequest) {
   const limited = await checkRateLimit(req, "auth");
@@ -140,17 +167,46 @@ export async function GET(req: NextRequest) {
   }
 
   const groupId = req.nextUrl.searchParams.get("groupId");
-  if (!groupId) {
+  const personal = req.nextUrl.searchParams.get("personal");
+
+  if (!groupId && !personal) {
     return NextResponse.json(
-      { error: "groupId is required" },
+      { error: "groupId or personal=true is required" },
       { status: 400 }
     );
   }
 
-  // Verify membership
+  // Personal contributions: groupId IS NULL, created by this user
+  if (personal === "true") {
+    const rows = await db
+      .select({
+        id: contributions.id,
+        contributionType: contributions.contributionType,
+        description: contributions.description,
+        evidenceUrl: contributions.evidenceUrl,
+        createdBy: contributions.createdBy,
+        creatorName: users.name,
+        attestationStatus: contributions.attestationStatus,
+        createdAt: contributions.createdAt,
+      })
+      .from(contributions)
+      .innerJoin(users, eq(users.id, contributions.createdBy))
+      .where(
+        and(
+          isNull(contributions.groupId),
+          eq(contributions.createdBy, user.id)
+        )
+      )
+      .orderBy(desc(contributions.createdAt))
+      .limit(100);
+
+    return NextResponse.json(rows);
+  }
+
+  // Group-scoped: verify membership
   const membership = await db.query.groupMemberships.findFirst({
     where: and(
-      eq(groupMemberships.groupId, groupId),
+      eq(groupMemberships.groupId, groupId!),
       eq(groupMemberships.userId, user.id),
       eq(groupMemberships.status, "active")
     ),
@@ -167,6 +223,7 @@ export async function GET(req: NextRequest) {
   const rows = await db
     .select({
       id: contributions.id,
+      contributionType: contributions.contributionType,
       description: contributions.description,
       evidenceUrl: contributions.evidenceUrl,
       createdBy: contributions.createdBy,
@@ -176,7 +233,7 @@ export async function GET(req: NextRequest) {
     })
     .from(contributions)
     .innerJoin(users, eq(users.id, contributions.createdBy))
-    .where(eq(contributions.groupId, groupId))
+    .where(eq(contributions.groupId, groupId!))
     .orderBy(desc(contributions.createdAt))
     .limit(100);
 

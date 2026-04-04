@@ -9,6 +9,9 @@ import {
   attendances,
   journalEntries,
   milestones,
+  contributions,
+  contributionMembers,
+  attestationEdges,
 } from "@/db/schema";
 import { eq, and, count, isNull, desc, sql } from "drizzle-orm";
 
@@ -91,6 +94,26 @@ export async function GET() {
     .where(
       and(eq(journalEntries.authorId, user.id), isNull(journalEntries.deletedAt))
     );
+
+  // Contribution count (created by user)
+  const [contribCount] = await db
+    .select({ count: count() })
+    .from(contributions)
+    .where(eq(contributions.createdBy, user.id));
+
+  // Signatures given (confirmed contributions for others)
+  const [signaturesGiven] = await db
+    .select({ count: count() })
+    .from(contributionMembers)
+    .where(
+      and(eq(contributionMembers.userId, user.id), eq(contributionMembers.confirmed, true))
+    );
+
+  // Signatures received (attestation edges where user is subject)
+  const [signaturesReceived] = await db
+    .select({ count: count() })
+    .from(attestationEdges)
+    .where(eq(attestationEdges.subjectId, user.id));
 
   // Per-group data
   const groupData = await Promise.all(
@@ -351,6 +374,9 @@ export async function GET() {
       groups: memberships.length,
       uniquePeopleReached: Number(uniqueAttendees?.count) || 0,
       journalEntries: journalCount?.count || 0,
+      contributions: contribCount?.count || 0,
+      signaturesGiven: signaturesGiven?.count || 0,
+      signaturesReceived: signaturesReceived?.count || 0,
     },
     groups: groupData,
     crossFeed: crossFeed.slice(0, 10),

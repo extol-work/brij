@@ -8,6 +8,8 @@ import { identifyUser, track } from "@/lib/posthog";
 import { getLocation } from "@/lib/geolocation";
 import { BrijLogo } from "@/components/brij-logo";
 import { BottomNav } from "@/components/bottom-nav";
+import { MemberSearch } from "@/components/member-search";
+import { ContributionCard, ContributionData } from "@/components/contribution-card";
 
 interface Activity {
   id: string;
@@ -282,6 +284,7 @@ function JournalSection({
   userInitial: string;
 }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [contribs, setContribs] = useState<ContributionData[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -289,12 +292,17 @@ function JournalSection({
   const [cachedGeo, setCachedGeo] = useState<{ latitude: number; longitude: number } | null>(null);
   const journalRef = useRef<HTMLDivElement>(null);
 
+  // Contribution compose state
+  const [showDetails, setShowDetails] = useState(false);
+  const [collaborators, setCollaborators] = useState<{ id: string; displayName: string }[]>([]);
+  const [evidenceUrl, setEvidenceUrl] = useState("");
+
   // Click outside to collapse
   useEffect(() => {
     if (!expanded) return;
     function handleClick(e: MouseEvent | TouchEvent) {
       if (journalRef.current && !journalRef.current.contains(e.target as Node)) {
-        setExpanded(false);
+        if (!showDetails) setExpanded(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -303,17 +311,42 @@ function JournalSection({
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("touchstart", handleClick);
     };
-  }, [expanded]);
+  }, [expanded, showDetails]);
 
-  // Prefetch entries on mount
+  // Prefetch entries + contributions on mount
   useEffect(() => {
-    fetch(`/api/groups/${group.id}/journal`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setEntries(data);
+    Promise.all([
+      fetch(`/api/groups/${group.id}/journal`).then((r) => r.json()),
+      fetch(`/api/contributions?groupId=${group.id}`).then((r) => r.json()),
+    ])
+      .then(([journalData, contribData]) => {
+        if (Array.isArray(journalData)) setEntries(journalData);
+        if (Array.isArray(contribData)) {
+          setContribs(
+            contribData.map((c: Record<string, unknown>) => ({
+              id: c.id as string,
+              description: c.description as string,
+              contributionType: c.contributionType as ContributionData["contributionType"],
+              evidenceUrl: c.evidenceUrl as string | null,
+              createdBy: c.createdBy as string,
+              createdByName: c.creatorName as string | null,
+              groupId: group.id,
+              groupName: group.name,
+              createdAt: c.createdAt as string,
+              members: ((c.collaborators as Array<Record<string, unknown>>) || []).map((m) => ({
+                userId: m.userId as string,
+                displayName: m.name as string | null,
+                confirmed: m.confirmed as boolean,
+                confirmedAt: null,
+              })),
+              confirmCount: (c.confirmedCount as number) || 0,
+              memberCount: ((c.collaborators as Array<unknown>) || []).length,
+            }))
+          );
+        }
       })
       .finally(() => setLoaded(true));
-  }, [group.id]);
+  }, [group.id, group.name]);
 
   const todayEntries = entries.filter((e) => {
     const d = new Date(e.createdAt);
@@ -333,20 +366,74 @@ function JournalSection({
     }
   }
 
+  const hasDetails = collaborators.length > 0 || evidenceUrl.trim().length > 0;
+  const buttonText = hasDetails
+    ? (collaborators.length > 0 ? "Post contribution" : evidenceUrl.trim() ? "Post published work" : "Post")
+    : "Post";
+  const buttonBg = evidenceUrl.trim() && collaborators.length === 0 ? "#2563eb" : "#8B6548";
+
   async function handlePost() {
     if (!text.trim()) return;
     setPosting(true);
-    const res = await fetch(`/api/groups/${group.id}/journal`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, ...cachedGeo }),
-    });
-    if (res.ok) {
-      const entry = await res.json();
-      setEntries((prev) => [entry, ...prev]);
-      track("journal_post", { group_id: group.id, word_count: text.trim().split(/\s+/).length });
-      setText("");
-      setExpanded(false);
+
+    if (hasDetails) {
+      // Post as contribution
+      const res = await fetch("/api/contributions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: group.id,
+          description: text.trim(),
+          evidenceUrl: evidenceUrl.trim() || undefined,
+          collaboratorIds: collaborators.map((c) => c.id),
+        }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        track("contribution_post", {
+          group_id: group.id,
+          type: collaborators.length > 0 ? "collaborative" : evidenceUrl.trim() ? "published_work" : "solo_self_report",
+        });
+        // Add to local contribs list
+        setContribs((prev) => [{
+          id: result.id,
+          description: text.trim(),
+          contributionType: result.contributionType,
+          evidenceUrl: evidenceUrl.trim() || null,
+          createdBy: userId,
+          createdByName: userInitial, // will show initial
+          groupId: group.id,
+          groupName: group.name,
+          createdAt: result.createdAt,
+          members: collaborators.map((c) => ({
+            userId: c.id,
+            displayName: c.displayName,
+            confirmed: false,
+            confirmedAt: null,
+          })),
+          confirmCount: 0,
+          memberCount: collaborators.length,
+        }, ...prev]);
+        setText("");
+        setEvidenceUrl("");
+        setCollaborators([]);
+        setShowDetails(false);
+        setExpanded(false);
+      }
+    } else {
+      // Post as journal entry
+      const res = await fetch(`/api/groups/${group.id}/journal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, ...cachedGeo }),
+      });
+      if (res.ok) {
+        const entry = await res.json();
+        setEntries((prev) => [entry, ...prev]);
+        track("journal_post", { group_id: group.id, word_count: text.trim().split(/\s+/).length });
+        setText("");
+        setExpanded(false);
+      }
     }
     setPosting(false);
   }
@@ -362,12 +449,45 @@ function JournalSection({
     }
   }
 
+  async function handleSign(contributionId: string) {
+    const res = await fetch(`/api/contributions/${contributionId}/confirm`, {
+      method: "POST",
+    });
+    if (res.ok) {
+      setContribs((prev) =>
+        prev.map((c) =>
+          c.id === contributionId
+            ? { ...c, confirmCount: c.confirmCount + 1 }
+            : c
+        )
+      );
+    }
+  }
+
+  async function handleDismiss(contributionId: string) {
+    // Remove self from contribution members (uses the confirm endpoint pattern)
+    setContribs((prev) =>
+      prev.map((c) =>
+        c.id === contributionId
+          ? { ...c, members: c.members.filter((m) => m.userId !== userId), memberCount: c.memberCount - 1 }
+          : c
+      )
+    );
+  }
+
   const weekCount = entries.filter((e) => {
     const d = new Date(e.createdAt);
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return d >= weekAgo;
   }).length;
+
+  // Merge journal entries and contributions for the feed
+  const todayContribs = contribs.filter((c) => {
+    const d = new Date(c.createdAt);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  });
 
   return (
     <div className="mb-6" ref={journalRef}>
@@ -379,53 +499,131 @@ function JournalSection({
 
       {/* Input */}
       <div
-        className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border mb-2 transition-all ${
+        className={`rounded-xl border mb-2 transition-all ${
           expanded
             ? "border-violet-600 shadow-[0_0_0_1px_rgba(124,58,237,1)]"
             : "border-[#E8D5BC] bg-[#FEFCF8]"
         }`}
         onClick={() => setExpanded(true)}
       >
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
-          style={{ backgroundColor: "#8B6548" }}
-        >
-          {userInitial}
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
+            style={{ backgroundColor: "#8B6548" }}
+          >
+            {userInitial}
+          </div>
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onFocus={() => { setExpanded(true); requestGeo(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && text.trim() && !showDetails) handlePost();
+            }}
+            placeholder="What are you working on?"
+            className="flex-1 text-base bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
+          />
+          {!showDetails && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePost();
+              }}
+              disabled={!text.trim() || posting}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold text-white shrink-0 transition-opacity ${
+                text.trim() ? "opacity-100" : "opacity-40"
+              }`}
+              style={{ backgroundColor: buttonBg }}
+            >
+              {posting ? "..." : buttonText}
+            </button>
+          )}
         </div>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onFocus={() => { setExpanded(true); requestGeo(); }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && text.trim()) handlePost();
-          }}
-          placeholder="What are you working on?"
-          className="flex-1 text-base bg-transparent outline-none placeholder-warm-gray-400 text-bark-900"
-        />
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handlePost();
-          }}
-          disabled={!text.trim() || posting}
-          className={`px-3.5 py-1.5 rounded-md text-xs font-semibold text-white shrink-0 transition-opacity ${
-            text.trim() ? "bg-[#8B6548] opacity-100" : "bg-[#8B6548] opacity-40"
-          }`}
-        >
-          Post
-        </button>
+
+        {/* + Add details link */}
+        {expanded && !showDetails && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDetails(true);
+            }}
+            className="text-xs text-warm-gray-400 hover:text-violet-600 px-3.5 pb-2.5 transition-colors"
+          >
+            + Add details
+          </button>
+        )}
+
+        {/* Contribution compose expansion */}
+        {showDetails && (
+          <div className="px-3.5 pb-3.5 pt-1 border-t border-warm-gray-100 mt-1">
+            <MemberSearch
+              groupId={group.id}
+              selected={collaborators}
+              onSelect={(m) => setCollaborators((prev) => [...prev, m])}
+              onRemove={(id) => setCollaborators((prev) => prev.filter((c) => c.id !== id))}
+            />
+
+            <div className="mt-3">
+              <label className="text-xs font-semibold text-warm-gray-500 mb-1 block">
+                Evidence <span className="font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                value={evidenceUrl}
+                onChange={(e) => setEvidenceUrl(e.target.value)}
+                placeholder="Link to a PR, doc, video, article..."
+                className="w-full px-3 py-2 border border-warm-gray-200 rounded-lg text-sm bg-white outline-none focus:border-violet-600 focus:shadow-[0_0_0_1px_rgba(124,58,237,1)] placeholder-warm-gray-400 text-bark-900"
+              />
+            </div>
+
+            {/* Blue hint for published work */}
+            {evidenceUrl.trim() && collaborators.length === 0 && (
+              <div className="mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-xs text-blue-700">
+                  &#128279; Link to your published work? This can become an Extol Card.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-3">
+              <button
+                onClick={() => {
+                  setShowDetails(false);
+                  setCollaborators([]);
+                  setEvidenceUrl("");
+                }}
+                className="text-xs text-warm-gray-400 hover:text-warm-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePost();
+                }}
+                disabled={!text.trim() || posting}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold text-white shrink-0 transition-opacity ${
+                  text.trim() ? "opacity-100" : "opacity-40"
+                }`}
+                style={{ backgroundColor: buttonBg }}
+              >
+                {posting ? "Posting..." : buttonText}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Collapsed count */}
-      {!expanded && loaded && entries.length > 0 && (
+      {!expanded && loaded && (entries.length > 0 || contribs.length > 0) && (
         <p className="text-xs text-warm-gray-400 text-center">
-          {todayEntries.length} {todayEntries.length === 1 ? "entry" : "entries"} today · {weekCount} this week
+          {todayEntries.length + todayContribs.length} {(todayEntries.length + todayContribs.length) === 1 ? "entry" : "entries"} today · {weekCount + contribs.length} this week
         </p>
       )}
 
       {/* Empty state */}
-      {!expanded && loaded && entries.length === 0 && (
+      {!expanded && loaded && entries.length === 0 && contribs.length === 0 && (
         <p className="text-sm text-warm-gray-400 text-center py-3 leading-relaxed">
           Share what you&apos;re working on.<br />
           No replies, no pressure — just a record<br />
@@ -436,7 +634,18 @@ function JournalSection({
       {/* Expanded feed */}
       {expanded && loaded && (
         <div className="mt-3 px-1">
-          {/* Today's entries */}
+          {/* Today's contributions */}
+          {todayContribs.map((c) => (
+            <ContributionCard
+              key={`contrib-${c.id}`}
+              contribution={c}
+              currentUserId={userId}
+              onSign={handleSign}
+              onDismiss={handleDismiss}
+            />
+          ))}
+
+          {/* Today's journal entries */}
           {todayEntries.slice(0, 2).map((entry) => (
             <JournalEntryRow
               key={entry.id}
@@ -451,6 +660,21 @@ function JournalSection({
               +{todayEntries.length - 2} more today
             </p>
           )}
+
+          {/* Past contributions (non-today) */}
+          {contribs.filter((c) => {
+            const d = new Date(c.createdAt);
+            const now = new Date();
+            return d.toDateString() !== now.toDateString();
+          }).map((c) => (
+            <ContributionCard
+              key={`contrib-${c.id}`}
+              contribution={c}
+              currentUserId={userId}
+              onSign={handleSign}
+              onDismiss={handleDismiss}
+            />
+          ))}
 
           {/* Past days collapsed */}
           {pastDays.map(({ label, entries: dayEntries }) => (
