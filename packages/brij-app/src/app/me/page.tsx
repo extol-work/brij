@@ -429,14 +429,11 @@ export default function MePage() {
                 <img
                   src={profile.image}
                   alt={profile.name}
-                  className={`w-16 h-16 rounded-full object-cover transition-all ${
-                    activeTab === "summary" ? "ring-[2.5px] ring-bark-700 ring-offset-2 ring-offset-cream" : ""
-                  }`}
+                  className="w-20 h-20 rounded-full object-cover"
                 />
               ) : (
-                <div className={`w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center text-white text-2xl font-semibold transition-all ${
-                  activeTab === "summary" ? "ring-[2.5px] ring-bark-700 ring-offset-2 ring-offset-cream" : ""
-                }`}>
+                <div className="w-20 h-20 rounded-full bg-amber-500 flex items-center justify-center text-white text-2xl font-semibold">
+
                   {getInitials(profile.name)}
                 </div>
               )}
@@ -670,8 +667,8 @@ function GroupTab({
           className="w-3.5 h-3.5 rounded-full inline-block"
           style={{ backgroundColor: group.color }}
         />
-        <span className="text-xs font-semibold text-bark-900">{group.name}</span>
-        <span className="text-xs text-warm-gray-500">· {formatRole(group.role)} · Week {group.stats.weeksSinceJoin} · {group.memberCount} members</span>
+        <span className="text-sm font-semibold text-bark-900">{group.name}</span>
+        <span className="text-sm text-warm-gray-500">· {formatRole(group.role)} · Week {group.stats.weeksSinceJoin} · {group.memberCount} members</span>
       </div>
 
       {/* Scoped stats */}
